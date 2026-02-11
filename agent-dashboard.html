@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Connect | Agent Portal</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#f0f9ff', 100: '#e0f2fe', 500: '#0ea5e9', 600: '#0284c7', 900: '#0c4a6e' }
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .fade-in { animation: fadeIn 0.2s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        *{
+            
+            outline:none;
+            border:none;
+            user-select:none;
+            -webkit-user-drag: none;
+        }
+        /* --- FIXED CUSTOM SELECT --- */
+        .custom-select-options { display: none; }
+        .custom-select.active .custom-select-options { display: block; }
+
+        /* --- FIXED MODAL TRANSITIONS --- */
+        .modal-panel {
+            position: absolute;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 50;
+            background: white;
+            display: flex;
+            flex-direction: column;
+        }
+.mxdd {
+                display:flex;
+            
+                place-content: center;
+                align-self:center;
+                align-items: center;
+                align-content:center;
+                justify-content:center;
+            }
+        /* Desktop Modal: Center & Scale */
+        @media (min-width: 768px) {
+            .mxdd {
+                display:flex;
+            
+                place-content: center;
+                align-self:center;
+                align-items: center;
+                align-content:center;
+                justify-content:center;
+            }
+            .modal-panel { 
+                left:25%;
+                top: 50%; 
+                width: 500px; max-height: 85vh; 
+                border-radius: 1rem;
+                /* Default State (Closed) */
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.95);
+                pointer-events: none;
+            }
+            .modal-panel.open {
+                /* Open State */
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+                pointer-events: auto;
+            }
+        }
+
+        /* Mobile Modal: Bottom Sheet */
+        @media (max-width: 767px) {
+            .modal-panel { 
+                top: auto; bottom: 0; left: 0; right: 0; 
+                width: 100%; max-height: 90vh; 
+                border-radius: 1.5rem 1.5rem 0 0; 
+                /* Default State (Closed) */
+                transform: translateY(100%);
+            }
+            .modal-panel.open { 
+                /* Open State */
+                transform: translateY(0); 
+            }
+        }
+
+        /* Chat Mobile Toggle */
+        .mobile-chat-active #chatListPane { display: none; }
+        .mobile-chat-active #chatMessagePane { display: flex; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-screen flex flex-col md:flex-row overflow-hidden">
+
+    <aside class="hidden md:flex flex-col w-64 bg-slate-900 text-white h-full z-30 shadow-xl flex-shrink-0">
+        <div class="p-6 border-b border-white/10 flex items-center gap-3">
+            <div class="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center font-bold text-lg text-white">A</div>
+            <div><h1 class="font-bold text-lg leading-tight">Agent<br>Workspace</h1></div>
+        </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <button onclick="switchTab('orders')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition bg-white/10" id="nav-orders">
+                <i class="fas fa-tasks w-5"></i> <span>My Orders</span>
+            </button>
+            <button onclick="switchTab('inbox')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition" id="nav-inbox">
+                <i class="fas fa-comment-alt w-5"></i> <span>Inbox</span>
+            </button>
+            <button onclick="switchTab('files')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition" id="nav-files">
+                <i class="fas fa-folder-open w-5"></i> <span>Files</span>
+            </button>
+            <button onclick="switchTab('profile')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition" id="nav-profile">
+                <i class="fas fa-chart-pie w-5"></i> <span>Stats & Profile</span>
+            </button>
+        </nav>
+        <div class="p-4 border-t border-white/10">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-xs">ME</div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium truncate" id="agentNameDisplay">Agent</p>
+                    <button onclick="auth.signOut()" class="text-xs text-brand-200 hover:text-white">Logout</button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <header class="md:hidden h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 z-40 flex-shrink-0">
+        <span class="font-bold text-slate-900 text-lg">Agent Workspace</span>
+        <button onclick="toggleMobileMenu()" class="text-slate-600 p-2"><i class="fas fa-bars text-xl"></i></button>
+    </header>
+
+    <div id="mobileMenu" class="fixed inset-0 z-[55] bg-slate-900 text-white transform -translate-x-full transition-transform duration-300 md:hidden flex flex-col">
+        <div class="p-6 border-b border-white/10 flex justify-between items-center">
+            <span class="font-bold text-xl">Research Connect</span>
+            <button onclick="toggleMobileMenu()"><i class="fas fa-times text-xl"></i></button>
+        </div>
+        <nav class="flex-1 p-6 space-y-4">
+            <button onclick="switchTab('orders'); toggleMobileMenu()" class="flex items-center gap-4 text-lg"><i class="fas fa-tasks w-6"></i> Orders</button>
+            <button onclick="switchTab('inbox'); toggleMobileMenu()" class="flex items-center gap-4 text-lg"><i class="fas fa-comment-alt w-6"></i> Inbox</button>
+            <button onclick="switchTab('files'); toggleMobileMenu()" class="flex items-center gap-4 text-lg"><i class="fas fa-folder-open w-6"></i> Files</button>
+            <button onclick="switchTab('profile'); toggleMobileMenu()" class="flex items-center gap-4 text-lg"><i class="fas fa-user w-6"></i> Profile</button>
+        </nav>
+        <div class="p-6 border-t border-white/10">
+            <button onclick="auth.signOut()" class="text-brand-300">Logout</button>
+        </div>
+    </div>
+
+    <main class="flex-1 flex flex-col h-full relative overflow-hidden bg-slate-50">
+        
+        <div class="flex-1 overflow-hidden relative">
+            
+            <div id="view-orders" class="view-section absolute inset-0 overflow-y-auto p-4 md:p-8 custom-scroll pb-24 md:pb-8 fade-in">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    <h2 class="text-2xl font-bold text-slate-800">My Assignments</h2>
+                    <div class="flex gap-2 w-full md:w-auto">
+                        <input type="text" onkeyup="filterOrders(this.value)" placeholder="Search orders..." class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm w-full md:w-64 outline-none focus:border-brand-500">
+                        <button onclick="loadOrders()" class="text-slate-400 hover:text-brand-600 px-2"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                </div>
+                <div id="orderList" class="space-y-4"></div>
+            </div>
+
+            <div id="view-inbox" class="view-section hidden absolute inset-0 flex flex-col md:p-6 fade-in bg-white md:bg-transparent ">
+                <div class="flex-1 flex overflow-hidden md:rounded-2xl md:border md:border-slate-200 md:shadow-sm md:bg-white h-full " id="chatContainer">
+                    
+                    <div id="chatListPane" class="w-full md:w-80 border-r border-slate-100 flex flex-col bg-white h-full">
+                        <div class="p-4 border-b border-slate-100 font-bold text-lg text-slate-800 flex justify-between items-center">
+                            <span>Messages</span>
+                            <input type="text" onkeyup="filterChats(this.value)" placeholder="Search..." class="bg-slate-50 border-none rounded-lg px-2 py-1 text-xs w-24 outline-none">
+                        </div>
+                        <div id="inboxList" class="flex-1 overflow-y-auto custom-scroll " >
+                            <p class="p-5 text-center text-slate-400 text-sm">Loading...</p>
+                        </div>
+                    </div>
+
+                    <div id="chatMessagePane" class="hidden md:flex flex-1 flex-col bg-slate-50 h-full relative " >
+                        <div class="h-16 bg-white border-b border-slate-100 flex items-center px-4 justify-between flex-shrink-0">
+                            <div class="flex items-center gap-3">
+                                <button onclick="backToInbox()" class="md:hidden text-slate-500 mr-2"><i class="fas fa-arrow-left"></i></button>
+                                <button onclick="closeChatDesktop()" class="hidden md:block text-slate-400 hover:text-brand-600 mr-2 transition"><i class="fas fa-arrow-left"></i></button>
+                                
+                                <div class="w-10 h-10 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold">C</div>
+                                <div>
+                                    <h3 class="font-bold text-slate-800 text-sm leading-tight" id="chatHeaderName">Select a Chat</h3>
+                                    <p class="text-xs text-slate-500" id="chatHeaderTitle">Order details</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scroll">
+                            <div class="h-full flex flex-col items-center justify-center text-slate-400">
+                                <i class="far fa-comments text-4xl mb-2"></i>
+                                <p>Select a conversation from the list</p>
+                            </div>
+                        </div>
+                        <div class="p-4 bg-white border-t border-slate-100 flex-shrink-0" id="chatInputArea">
+                            <div class="flex gap-2">
+                                <input type="text" id="chatInput" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-500 transition-colors" placeholder="Type a message..." disabled>
+                                <button onclick="sendAgentMessage()" id="chatSendBtn" class="bg-brand-600 text-white w-12 rounded-xl shadow-lg hover:bg-brand-700 flex items-center justify-center disabled:opacity-50" disabled>
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-files" class="view-section hidden absolute inset-0 overflow-y-auto p-4 md:p-8 custom-scroll pb-24 md:pb-8 fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800">Project Files</h2>
+                    <input type="text" onkeyup="filterFiles(this.value)" placeholder="Search files..." class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm w-40 outline-none focus:border-brand-500">
+                </div>
+                <div id="fileGroupsContainer" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
+                <div id="filesEmpty" class="hidden text-center py-20 text-slate-400">
+                    <i class="far fa-folder-open text-4xl mb-3"></i>
+                    <p>No files uploaded for your orders yet.</p>
+                </div>
+            </div>
+
+            <div id="view-profile" class="view-section hidden absolute inset-0 overflow-y-auto p-4 md:p-8 custom-scroll pb-24 md:pb-8 fade-in">
+                <h2 class="text-2xl font-bold text-slate-800 mb-6">Performance & Stats</h2>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
+                        <p class="text-xs text-slate-400 font-bold uppercase">Total Orders</p>
+                        <h3 class="text-2xl font-bold text-slate-800 mt-1" id="statOrders">0</h3>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
+                        <p class="text-xs text-slate-400 font-bold uppercase">Completed</p>
+                        <h3 class="text-2xl font-bold text-green-600 mt-1" id="statCompleted">0</h3>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
+                        <p class="text-xs text-slate-400 font-bold uppercase">Pending</p>
+                        <h3 class="text-2xl font-bold text-orange-500 mt-1" id="statPending">0</h3>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
+                        <p class="text-xs text-slate-400 font-bold uppercase">Revenue Generated</p>
+                        <h3 class="text-2xl font-bold text-brand-600 mt-1" id="statRevenue">₹0</h3>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
+                        <h4 class="font-bold text-slate-800 mb-4">Completion Target</h4>
+                        <div class="relative pt-1">
+                            <div class="flex mb-2 items-center justify-between">
+                                <div><span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-brand-600 bg-brand-200">Progress</span></div>
+                                <div class="text-right"><span class="text-xs font-semibold inline-block text-brand-600" id="statRate">0%</span></div>
+                            </div>
+                            <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-brand-100">
+                                <div style="width:0%" id="statBar" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-brand-500 transition-all duration-1000"></div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-400">Based on assigned orders vs finished orders.</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
+                        <h4 class="font-bold text-slate-800 mb-4">Agent Profile</h4>
+                        <div class="flex items-center gap-4">
+                            <div class="w-16 h-16 rounded-full bg-slate-200 flex items-center justify-center text-2xl font-bold text-slate-500">A</div>
+                            <div>
+                                <h3 class="font-bold text-lg" id="profileName">Loading...</h3>
+                                <p class="text-sm text-slate-500" id="profileEmail">...</p>
+                                <span class="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded mt-1 inline-block">ACTIVE STATUS</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 flex justify-around items-center z-40 pb-safe">
+        <button onclick="switchTab('orders')" class="nav-item-mobile flex flex-col items-center text-brand-600 p-2"><i class="fas fa-tasks text-lg"></i><span class="text-[10px]">Orders</span></button>
+        <button onclick="switchTab('inbox')" class="nav-item-mobile flex flex-col items-center text-slate-400 p-2"><i class="fas fa-comment-alt text-lg"></i><span class="text-[10px]">Inbox</span></button>
+        <button onclick="switchTab('files')" class="nav-item-mobile flex flex-col items-center text-slate-400 p-2"><i class="fas fa-folder-open text-lg"></i><span class="text-[10px]">Files</span></button>
+        <button onclick="switchTab('profile')" class="nav-item-mobile flex flex-col items-center text-slate-400 p-2"><i class="fas fa-user text-lg"></i><span class="text-[10px]">Profile</span></button>
+    </nav>
+<div class="mxdd" >
+    <div id="editModal" class="fixed inset-0 z-[60] hidden" role="dialog" style="justify-content: center;">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('editModal')"></div>
+        <div class="absolute bg-white modal-panel shadow-2xl p-6 fade-in flex flex-col">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-slate-900">Update Order</h3>
+                <button onclick="closeModal('editModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="space-y-5 flex-1 overflow-y-auto custom-scroll">
+                <input type="hidden" id="editOrdId">
+                
+                <div class="relative custom-select" id="statusSelect">
+                    <label class="text-xs font-bold text-slate-500 uppercase ml-1 mb-1 block">Status</label>
+                    <button onclick="toggleSelect('statusSelect')" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm flex justify-between items-center text-slate-700">
+                        <span class="selected-text" id="statusText">Open</span> <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="custom-select-options absolute w-full bg-white border border-slate-200 rounded-xl mt-1 shadow-lg z-50">
+                        <div onclick="selectStatus('Open')" class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm">Open</div>
+                        <div onclick="selectStatus('In Progress')" class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm">In Progress</div>
+                        <div onclick="selectStatus('Finished')" class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm">Finished</div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase ml-1 mb-1 block">Progress: <span id="progLabel" class="text-brand-600">1/4</span></label>
+                    <input type="range" id="editProgress" min="1" max="4" step="1" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-600" oninput="updateProgLabel(this.value)">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase ml-1 mb-1 block">Payment (₹)</label>
+                        <input type="number" id="editPayment" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none">
+                    </div>
+                    <div class="relative">
+                        <label class="text-xs font-bold text-slate-500 uppercase ml-1 mb-1 block">Deadline</label>
+                        <div onclick="toggleDatePicker()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-600 cursor-pointer flex justify-between items-center hover:bg-slate-100">
+                            <span id="dateDisplay">Select Date</span>
+                            <i class="far fa-calendar text-slate-400"></i>
+                        </div>
+                        <input type="hidden" id="editDate">
+                        <div id="customCalendar" class="absolute bottom-full mb-2 right-0 w-64 bg-white shadow-xl rounded-2xl border border-slate-100 p-4 hidden z-50">
+                            <div class="flex justify-between items-center mb-4">
+                                <button onclick="changeMonth(-1)" class="p-1 hover:bg-slate-100 rounded text-slate-500"><i class="fas fa-chevron-left"></i></button>
+                                <span id="calMonthYear" class="text-sm font-bold text-slate-700"></span>
+                                <button onclick="changeMonth(1)" class="p-1 hover:bg-slate-100 rounded text-slate-500"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                            <div class="grid grid-cols-7 gap-1 text-center mb-2">
+                                <span class="text-[10px] text-slate-400 font-bold">S</span><span class="text-[10px] text-slate-400 font-bold">M</span><span class="text-[10px] text-slate-400 font-bold">T</span><span class="text-[10px] text-slate-400 font-bold">W</span><span class="text-[10px] text-slate-400 font-bold">T</span><span class="text-[10px] text-slate-400 font-bold">F</span><span class="text-[10px] text-slate-400 font-bold">S</span>
+                            </div>
+                            <div id="calDays" class="grid grid-cols-7 gap-1 text-center text-sm font-medium text-slate-600"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button onclick="submitUpdateOrder()" class="flex-1 bg-brand-600 text-white font-bold py-3 rounded-xl hover:bg-brand-700 shadow-lg shadow-brand-500/30">Save Changes</button>
+                    <button onclick="openQuitModal()" class="px-4 bg-red-50 text-red-500 font-bold rounded-xl hover:bg-red-100 border border-red-100">Quit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+    <div id="fulfillModal" class="fixed inset-0 z-[60] hidden" role="dialog">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('fulfillModal')"></div>
+        <div class="absolute bg-white modal-panel shadow-2xl p-6 fade-in">
+            <h3 class="text-xl font-bold mb-2">Deliver Project</h3>
+            <p class="text-sm text-slate-500 mb-4">Upload final files for the client.</p>
+            <div id="dropZone" class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition cursor-pointer mb-4" onclick="document.getElementById('fulfillFile').click()">
+                <i class="fas fa-cloud-upload-alt text-2xl text-brand-500 mb-2"></i>
+                <p class="text-sm font-bold text-slate-600">Click to Upload</p>
+                <input type="file" id="fulfillFile" class="hidden" onchange="handleFileSelect()">
+            </div>
+            <div id="filePreview" class="hidden flex items-center justify-between bg-brand-50 p-3 rounded-lg mb-4">
+                <span class="text-sm font-bold text-brand-700 truncate w-40" id="fileName">file.zip</span>
+                <span class="text-xs text-brand-500" id="fileSize">2MB</span>
+            </div>
+            <button onclick="submitFulfillment()" id="btnFulfill" class="w-full bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 shadow-lg">Send to Client</button>
+        </div>
+    </div>
+
+    <div id="quitModal" class="fixed inset-0 z-[70] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+        <div class="bg-white rounded-2xl shadow-2xl p-6 relative z-10 w-full max-w-sm text-center">
+            <h3 class="text-lg font-bold text-slate-800">Quit Order?</h3>
+            <p class="text-xs text-slate-500 mb-4">Type <span id="captchaBox" class="font-bold bg-slate-100 px-1 rounded">CODE</span> below.</p>
+            <input type="text" id="quitCaptcha" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-center uppercase font-bold mb-4">
+            <button onclick="confirmQuit()" class="w-full bg-red-600 text-white font-bold py-2 rounded-xl">Confirm (<span id="quitStep">1</span>/3)</button>
+            <button onclick="closeModal('quitModal')" class="mt-3 text-slate-400 text-sm hover:underline">Cancel</button>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed top-5 right-5 z-[100] transform translate-x-[150%] transition-transform duration-300">
+        <div class="bg-slate-900 text-white px-6 py-3 rounded-xl shadow-xl flex items-center gap-3 border border-slate-700">
+            <div id="toastIcon" class="w-2 h-2 rounded-full bg-green-400"></div>
+            <span id="toastMsg" class="text-sm font-medium">Notification</span>
+        </div>
+    </div>
+
+    <script src="agold.js">
+   
+    </script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RESEARCH CONNECT CLIENT</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { primary: '#3b82f6', secondary: '#6366f1' },
+                        ios: { blue: '#007AFF', gray: '#F2F2F7', border: '#E5E5EA' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen w-full overflow-hidden text-slate-900 select-none font-sans">
+
+    <div class="max-w-md mx-auto h-full flex flex-col bg-ios-gray relative shadow-2xl overflow-hidden sm:h-[90vh] sm:mt-[5vh] sm:rounded-3xl sm:border-[8px] sm:border-slate-800">
+        
+        <header class="flex-none h-16 bg-white/90 backdrop-blur-md border-b border-ios-border flex items-center justify-between px-4 z-20 sticky top-0">
+            <h1 class="text-xl font-bold tracking-tight text-black">Research Connect</h1>
+            <button class="opacity-50 transition-opacity"><i class="fas fa-bell text-xl"></i></button>
+        </header>
+
+        <main class="flex-1 flex flex-col h-full bg-gray-50 relative overflow-hidden">
+            
+            <div class="px-6 py-5 bg-white border-b border-gray-200 sticky top-0 z-10 flex justify-between items-center shadow-sm">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">Project Files</h2>
+                    <p class="text-xs text-gray-500 mt-1">Shared documents & assets</p>
+                </div>
+                <button onclick="openUploadModal()" class="bg-brand-primary hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-blue-500/30 transition-all flex items-center active:scale-95">
+                    <i class="fas fa-cloud-upload-alt mr-2"></i> Upload
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6 custom-scroll">
+                <div id="filesLoader" class="text-center py-20 hidden">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-brand-primary border-t-transparent"></div>
+                    <p class="text-gray-400 text-xs mt-3 font-medium">Syncing files...</p>
+                </div>
+
+                <div id="filesGrid" class="grid grid-cols-2 gap-4">
+                    </div>
+
+                <div id="emptyFilesState" class="hidden flex flex-col items-center justify-center pt-20 text-gray-400">
+                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="far fa-folder-open text-2xl text-gray-300"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-gray-600">No files yet</h3>
+                    <p class="text-xs text-center mt-1">Upload documents to share them.</p>
+                </div>
+            </div>
+        </main>
+
+        <nav class="flex-none bg-white/90 backdrop-blur-xl border-t border-ios-border h-[83px] w-full absolute bottom-0 z-30 pb-5">
+            <ul class="flex justify-around items-center h-full px-1">
+                <li class="flex-1 group"><button class="nav-btn w-full flex flex-col items-center justify-center text-gray-400"><i class="fas fa-house text-xl mb-1"></i><span class="text-[10px]">Home</span></button></li>
+                <li class="flex-1 group"><button class="nav-btn w-full flex flex-col items-center justify-center text-gray-400"><i class="fas fa-inbox text-xl mb-1"></i><span class="text-[10px]">Inbox</span></button></li>
+                <li class="flex-1 group"><button class="nav-btn w-full flex flex-col items-center justify-center text-brand-primary"><i class="fas fa-folder text-xl mb-1"></i><span class="text-[10px]">Files</span></button></li>
+                 <li class="flex-1 group">
+                    <button onclick="switchTab(this)" class="nav-btn w-full flex flex-col items-center justify-center space-y-1 text-gray-400 hover:text-gray-500 transition-colors">
+                        <i class="fas fa-inr text-xl mb-0.5"></i>
+                        <span class="text-[10px] font-medium">Payments</span>
+                    </button>
+                </li>
+                <li class="flex-1 group"><button class="nav-btn w-full flex flex-col items-center justify-center text-gray-400"><i class="fas fa-user text-xl mb-1"></i><span class="text-[10px]">Profile</span></button></li>
+            </ul>
+        </nav>
+
+    </div>
+
+    <div id="uploadModal" class="fixed inset-0 z-[60] hidden" role="dialog">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity opacity-0" id="uploadBackdrop" onclick="closeUploadModal()"></div>
+        
+        <div id="uploadPanel" class="absolute bottom-0 w-full bg-white rounded-t-[30px] shadow-2xl transform translate-y-full transition-transform duration-300 flex flex-col max-h-[90vh]">
+            
+            <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-slate-800">Upload Document</h3>
+                <button onclick="closeUploadModal()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="p-6 space-y-6 overflow-y-auto">
+                
+                <div class="relative">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2 ml-1">Link to Order</label>
+                    <button onclick="toggleOrderSelect()" id="orderSelectBtn" class="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3.5 text-sm flex justify-between items-center focus:outline-none hover:border-brand-primary transition-colors text-left group">
+                        <span id="selectedOrderText" class="text-gray-400 font-medium">Select active order...</span>
+                        <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform duration-200 group-hover:text-brand-primary" id="orderSelectArrow"></i>
+                    </button>
+                    
+                    <div id="orderDropdown" class="absolute w-full bg-white shadow-xl rounded-xl mt-2 border border-gray-100 overflow-hidden z-50 hidden max-h-48 overflow-y-auto custom-scroll">
+                        <div class="p-4 text-center text-xs text-gray-400"><i class="fas fa-circle-notch fa-spin mr-2"></i>Loading orders...</div>
+                    </div>
+                    <input type="hidden" id="selectedOrderId">
+                    <input type="hidden" id="selectedOrderTitle">
+                    <input type="hidden" id="selectedAgentId">
+                </div>
+
+                <div class="border-2 border-dashed border-gray-300 rounded-3xl p-8 text-center hover:bg-blue-50 hover:border-brand-primary transition-all duration-300 cursor-pointer relative group" id="dropZone">
+                    <input type="file" id="fileInput" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="handleFileSelect()">
+                    
+                    <div id="uploadPlaceholder" class="transition-opacity duration-300">
+                        <div class="w-14 h-14 bg-blue-100 text-brand-primary rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-cloud-upload-alt text-2xl"></i>
+                        </div>
+                        <p class="text-sm font-bold text-slate-700">Tap to browse</p>
+                        <p class="text-[10px] text-gray-400 mt-1">PDF, DOCX, PNG (Max 10MB)</p>
+                    </div>
+
+                    <div id="filePreview" class="hidden absolute inset-0 bg-white/90 rounded-3xl flex flex-col items-center justify-center p-4">
+                        <i class="fas fa-file-alt text-3xl text-brand-primary mb-2"></i>
+                        <p class="text-sm font-bold text-gray-800 truncate w-full px-4" id="fileNamePreview">filename.pdf</p>
+                        <p class="text-xs text-gray-500 font-mono mt-1" id="fileSizePreview">0 MB</p>
+                        <button class="mt-3 text-xs text-red-500 hover:underline z-20" onclick="resetFileSelection(event)">Remove</button>
+                    </div>
+                </div>
+
+                <div id="progressContainer" class="hidden bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                    <div class="flex justify-between text-xs font-bold text-gray-600 mb-2">
+                        <span id="progressStatus">Uploading...</span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div id="progressBar" class="bg-brand-primary h-full rounded-full transition-all duration-300 w-0 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+                    </div>
+                </div>
+
+                <button onclick="startUpload()" id="btnUpload" class="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl shadow-xl hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2">
+                    <span>Upload File</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteModal" class="fixed inset-0 z-[70] hidden flex items-center justify-center px-4" role="dialog">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeDeleteModal()"></div>
+        <div class="bg-white rounded-2xl shadow-2xl p-6 relative z-10 w-full max-w-sm text-center transform scale-95 opacity-0 transition-all duration-200" id="deletePanel">
+            <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-trash-alt text-2xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800">Delete File?</h3>
+            <p class="text-sm text-gray-500 mt-2 mb-6">Are you sure? This cannot be undone.</p>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="closeDeleteModal()" class="py-3 rounded-xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 text-sm">Cancel</button>
+                <button onclick="confirmDelete()" class="py-3 rounded-xl bg-red-500 text-white font-bold hover:bg-red-600 shadow-lg shadow-red-500/30 text-sm">Delete</button>
+            </div>
+        </div>
+    </div>
+ <div id="toast" class="fixed top-5 right-0 bg-white text-black px-6 py-3 rounded-lg shadow-2xl transform translate-x-full transition-transform duration-300 z-[70] flex items-center">
+        <i class="fas fa-x mr-3 text-brand-success"></i>
+        <div>
+            
+            <p class="text-xs text-gray-400" id="toastMsg">Action successful.</p>
+        </div>
+    </div>
+    <script src='files.js'>
+  
+    </script>
+</body>
+</html>

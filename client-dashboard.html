@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RESEARCH CONNECT CLIENT</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+                    },
+                    colors: {
+                        ios: {
+                            blue: '#007AFF',
+                            red: '#FF3B30',
+                            gray: '#F2F2F7',
+                            border: '#E5E5EA',
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.2s ease-out',
+                        'scale-up': 'scaleUp 0.2s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        scaleUp: {
+                            '0%': { transform: 'scale(0.95)', opacity: '0' },
+                            '100%': { transform: 'scale(1)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Sidebar Transition */
+        #sidebarPanel {
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); /* Apple-like ease */
+        }
+                *{
+            
+            outline:none;
+            border:none;
+            user-select:none;
+            -webkit-user-drag: none;
+        }
+        /* Modal Transition */
+        .modal-active {
+            animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen w-full overflow-hidden text-slate-900 select-none">
+
+    <div class="w-full h-full flex flex-col bg-ios-gray relative shadow-2xl overflow-hidden">
+        
+        <header class="flex-none h-16 bg-white/90 backdrop-blur-md border-b border-ios-border flex items-center justify-between px-4 md:px-8 z-20 sticky top-0">
+            
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()" class="text-ios-blue text-2xl focus:outline-none hover:opacity-70 transition-opacity p-1">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <h1 class="text-xl font-bold tracking-tight text-black">Research Connect</h1>
+            </div>
+
+      
+            
+            <div class="flex items-center space-x-5 text-ios">
+               
+            </div>
+        </header>
+
+ <nav class="md:hidden flex-none bg-white/90 backdrop-blur-xl border-t border-ios-border h-[83px] w-full absolute bottom-0 z-30 pb-5">
+     <ul class="flex justify-around items-center h-full px-1">
+         <li class="flex-1 group"><button onclick="switchPage('client-dashboard')" class="nav-btn w-full flex flex-col items-center justify-center text-ios-blue"><i class="fas fa-house text-xl mb-1"></i><span class="text-[10px]">Home</span></button></li>
+         <li class="flex-1 group"><button onclick="switchPage('client-conversations')" class="nav-btn w-full flex flex-col items-center justify-center text-gray-400"><i class="fas fa-inbox text-xl mb-1"></i><span class="text-[10px]">Inbox</span></button></li>
+         <li class="flex-1 group"><button onclick="switchPage('client-files')" class="nav-btn w-full flex flex-col items-center justify-center text-gray-400"><i class="fas fa-folder text-xl mb-1"></i><span class="text-[10px]">Files</span></button></li>
+         <li class="flex-1 group"><button onclick="switchPage('client-payments')" class="nav-btn w-full flex flex-col items-center justify-center text-gray-400"><i class="fas fa-inr text-xl mb-1"></i><span class="text-[10px]">Pay</span></button></li>
+         
+     </ul>
+ </nav>
+        <main class="flex-1 overflow-y-auto no-scrollbar p-4 md:p-8 pb-28 md:pb-8">
+            <div class="max-w-7xl mx-auto w-full">
+                <div style="font-size: 18px; font-weight: 600;" id="welcome-msg" class="mb-4"></div>
+                
+                <div id="orderList" class="space-y-4 md:space-y-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    </div>
+            </div>
+
+           <div id="sidebarOverlay" class="fixed inset-0 z-[60] hidden" aria-hidden="true">
+            <div onclick="toggleSidebar()" class="absolute inset-0 bg-black/20 backdrop-blur-[2px] transition-opacity opacity-0 duration-300" id="sidebarBackdrop"></div>
+            <div id="sidebarPanel" class="absolute left-0 top-0 bottom-0 w-[280px] md:w-[320px] bg-white shadow-2xl transform -translate-x-full flex flex-col border-r border-gray-100">
+                <div class="p-6 pb-4 border-b border-gray-100 bg-gray-50/50">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-lg font-bold text-gray-800">Research Connect</h2>
+                        <button onclick="toggleSidebar()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-500 transition-colors">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-ios-blue to-purple-500 flex items-center justify-center text-white font-bold text-lg shadow-md"> <i class="fas fa-user">
+        <!--Tab to edit-->
+    </i> </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-900" id="uname">User Name</p>
+                            <p class="text-xs text-gray-500" id="umail">client@research.com</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-y-auto p-3 space-y-1">
+                    <button onclick="switchPage('client-dashboard')" class="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-100 text-gray-700 transition-colors group">
+                        <div class="w-8 h-8 rounded-lg bg-blue-50 text-ios-blue flex items-center justify-center group-hover:bg-white"><i class="fas fa-house"></i></div>
+                        <span class="font-medium">Home</span>
+                    </button>
+                    <button onclick="switchPage('client-conversations')" class="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-100 text-gray-700 transition-colors group">
+                        <div class="w-8 h-8 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center group-hover:bg-white"><i class="fas fa-inbox"></i></div>
+                        <span class="font-medium">Inbox</span>
+                    </button>
+                    <button onclick="switchPage('client-files')" class="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-100 text-gray-700 transition-colors group">
+                        <div class="w-8 h-8 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center group-hover:bg-white"><i class="fas fa-folder"></i></div>
+                        <span class="font-medium">Files</span>
+                    </button>
+                    <button onclick="switchPage('client-payments')" class="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-100 text-gray-700 transition-colors group">
+                        <div class="w-8 h-8 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center group-hover:bg-white"><i class="fas fa-inr"></i></div>
+                        <span class="font-medium">Payments</span>
+                    </button>
+                    
+                </div>
+                <div class="p-4 border-t border-gray-100 bg-gray-50/50">
+                    <button onclick="openLogoutModal()" class="w-full flex items-center justify-center space-x-2 p-3 rounded-xl bg-white border border-gray-200 text-ios-red hover:bg-red-50 hover:border-red-100 transition-all shadow-sm">
+                        <i class="fas fa-sign-out-alt"></i><span class="font-semibold">Log Out</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+            <div id="customLogoutModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center px-4">
+                <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0" id="logoutBackdrop"></div>
+                
+                <div id="logoutCard" class="bg-white rounded-[24px] w-full max-w-sm p-6 shadow-2xl relative z-10 transform scale-95 opacity-0 transition-all duration-200">
+                    <div class="w-14 h-14 rounded-full bg-red-100 mx-auto flex items-center justify-center mb-4 text-ios-red text-2xl">
+                        <i class="fas fa-power-off"></i>
+                    </div>
+                    
+                    <h3 class="text-xl font-bold text-center text-gray-900 mb-2">Log Out</h3>
+                    <p class="text-gray-500 text-center text-sm mb-6">Are you sure you want to sign out of your account?</p>
+                    
+                    <div class="flex space-x-3">
+                        <button onclick="closeLogoutModal()" class="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">
+                            Cancel
+                        </button>
+                        <button onclick="confirmLogout()" class="flex-1 py-3 px-4 bg-ios-red hover:bg-red-600 text-white rounded-xl font-medium transition-colors shadow-lg shadow-red-200">
+                            Log Out
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="modalOverlay" class="fixed inset-0 z-[100] hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                <div onclick="closeModal()" class="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity opacity-0 duration-300" id="modalBackdrop"></div>
+                <div id="modalPanel" class="absolute bottom-0 w-full bg-white rounded-t-[30px] shadow-2xl transform translate-y-full transition-transform duration-300 ease-out sm:max-w-md sm:mx-auto sm:left-0 sm:right-0 md:top-1/2 md:bottom-auto md:left-1/2 md:right-auto md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-[30px] md:w-[500px] flex flex-col max-h-[90vh]">
+                    <div class="flex-none pt-3 pb-2 px-6 bg-white rounded-t-[30px] z-10 sticky top-0">
+                        <div class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-4 md:hidden"></div>
+                        <div class="flex justify-between items-start md:mt-4">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900" id="modalTitle">Order Details</h3>
+                                <p class="text-xs text-gray-400 font-mono mt-0.5" id="modalSubtitle">Loading...</p>
+                            </div>
+                            <button onclick="closeModal()" class="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200 transition-colors">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="modalContent" class="flex-1 overflow-y-auto p-6 pt-2 pb-10 space-y-6"></div>
+                </div>
+            </div>
+        </main>
+
+        <nav class="hidden md:flex items-center space-x-6">
+                <button onclick="switchPage('client-dashboard')" class="nav-btn flex items-center space-x-2 text-ios-blue hover:text-ios-blue transition-colors font-medium">
+                    <i class="fas fa-house"></i> <span>Home</span>
+                </button>
+                <button  class="nav-btn flex items-center space-x-2 text-ios-blue transition-colors font-medium">
+                    <i class="fas fa-inbox"></i> <span>Inbox</span>
+                </button>
+                <button onclick="switchPage('client-files')" class="nav-btn flex items-center space-x-2 text-gray-500 hover:text-ios-blue transition-colors font-medium">
+                    <i class="fas fa-folder"></i> <span>Files</span>
+                </button>
+                <button onclick="switchPage('client-payments')" class="nav-btn flex items-center space-x-2 text-gray-500 hover:text-ios-blue transition-colors font-medium">
+                    <i class="fas fa-inr"></i> <span>Payments</span>
+                </button>
+            </nav>
+
+    </div>
+
+
+    <script>
+        // --- Navigation Logic ---
+        function switchPage(page) {
+    
+    window.location.href = `/${page}`;
+}
+document.getElementById("uname").innerText = localStorage.getItem("uname")
+            document.getElementById("umail").innerText = localStorage.getItem("umail")
+   
+        function switchTabFromSidebar(tabName) {
+            updateActiveState(tabName);
+            toggleSidebar(); // Close sidebar after clicking
+            console.log("Navigating to:", tabName);
+        }
+
+        function updateActiveState(tabName) {
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-ios-blue');
+                if(btn.querySelector('.text-[10px]')) { 
+                     // Mobile bottom nav
+                     btn.classList.add('text-gray-400');
+                } else {
+                     // Desktop top nav
+                     btn.classList.remove('text-gray-500'); 
+                     btn.classList.add('text-gray-500');
+                }
+            });
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if(btn.innerText.trim() === tabName) {
+                    btn.classList.remove('text-gray-400');
+                    btn.classList.remove('text-gray-500');
+                    btn.classList.add('text-ios-blue');
+                }
+            });
+        }
+
+        // --- Sidebar Logic ---
+        function toggleSidebar() {
+            const overlay = document.getElementById('sidebarOverlay');
+            const panel = document.getElementById('sidebarPanel');
+            const backdrop = document.getElementById('sidebarBackdrop');
+
+            if (overlay.classList.contains('hidden')) {
+                // Open
+                overlay.classList.remove('hidden');
+                setTimeout(() => {
+                    backdrop.classList.remove('opacity-0');
+                    panel.classList.remove('-translate-x-full');
+                }, 10);
+            } else {
+                // Close
+                backdrop.classList.add('opacity-0');
+                panel.classList.add('-translate-x-full');
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                }, 400); // Wait for transition
+            }
+        }
+
+        // --- Logout Custom Modal Logic ---
+        const logoutModal = document.getElementById('customLogoutModal');
+        const logoutCard = document.getElementById('logoutCard');
+        const logoutBackdrop = document.getElementById('logoutBackdrop');
+
+        function openLogoutModal() {
+            // Close sidebar if open
+            if(!document.getElementById('sidebarOverlay').classList.contains('hidden')){
+                toggleSidebar();
+            }
+            
+            logoutModal.classList.remove('hidden');
+            // Small delay for animation
+            setTimeout(() => {
+                logoutBackdrop.classList.remove('opacity-0');
+                logoutCard.classList.remove('scale-95', 'opacity-0');
+                logoutCard.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeLogoutModal() {
+            logoutBackdrop.classList.add('opacity-0');
+            logoutCard.classList.remove('scale-100', 'opacity-100');
+            logoutCard.classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                logoutModal.classList.add('hidden');
+            }, 200);
+        }
+
+        function confirmLogout() {
+            // Loading state
+            const btn = logoutCard.querySelectorAll('button')[1];
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            
+            console.log('Logging out...');
+            setTimeout(() => {
+                 // Add your actual firebase signout logic here
+                 // firebase.auth().signOut().then(() => window.location.reload());
+                 
+                 
+                 location.reload(); 
+            }, 1000);
+        }
+    </script>
+
+    <script src="client.js"></script>
+
+</body>
+</html>

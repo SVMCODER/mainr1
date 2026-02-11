@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RESEARCH CONNECT CLIENT</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'] },
+                    colors: { ios: { blue: '#007AFF', red: '#FF3B30', gray: '#F2F2F7', border: '#E5E5EA' } },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out forwards',
+                    },
+                    keyframes: {
+                        fadeIn: { from: { opacity: '0', transform: 'translateY(10px)' }, to: { opacity: '1', transform: 'translateY(0)' } }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+                *{
+            
+            outline:none;
+            border:none;
+            user-select:none;
+            -webkit-user-drag: none;
+        }
+        /* Sidebar Transition */
+        #sidebarPanel { transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen w-full overflow-hidden text-slate-900 select-none font-sans">
+
+    <div class="w-full h-full flex flex-col bg-ios-gray relative shadow-2xl overflow-hidden">
+        
+        <header class="flex-none h-16 bg-white/90 backdrop-blur-md border-b border-ios-border flex items-center justify-between px-4 md:px-8 z-20 sticky top-0">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()" class="text-ios-blue text-xl hover:opacity-70 transition-opacity">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 class="text-xl font-bold tracking-tight text-black">Research Connect</h1>
+            </div>
+
+            <nav class="hidden md:flex items-center space-x-6">
+                <button onclick="switchPage('client-dashboard')" class="nav-btn flex items-center space-x-2 text-gray-500 hover:text-ios-blue transition-colors font-medium">
+                    <i class="fas fa-house"></i> <span>Home</span>
+                </button>
+                <button  class="nav-btn flex items-center space-x-2 text-ios-blue transition-colors font-medium">
+                    <i class="fas fa-inbox"></i> <span>Inbox</span>
+                </button>
+                <button onclick="switchPage('client-files')" class="nav-btn flex items-center space-x-2 text-gray-500 hover:text-ios-blue transition-colors font-medium">
+                    <i class="fas fa-folder"></i> <span>Files</span>
+                </button>
+                <button onclick="switchPage('client-payments')" class="nav-btn flex items-center space-x-2 text-gray-500 hover:text-ios-blue transition-colors font-medium">
+                    <i class="fas fa-inr"></i> <span>Payments</span>
+                </button>
+            </nav>
+
+            <div class="flex items-center space-x-5 text-ios">
+               
+               
+            </div>
+        </header>
+
+        <main class="flex-1 flex flex-col h-full bg-gray-50 relative overflow-hidden">
+            
+            <div class="w-full h-full max-w-4xl mx-auto flex flex-col">
+                
+                <div class="px-6 py-5 bg-white border-b border-gray-200 sticky top-0 z-10 md:bg-transparent md:border-none md:pt-8 md:pb-4">
+                    <div class="bg-gray-100 p-1 rounded-xl flex font-medium relative shadow-inner md:w-[400px] md:mx-auto md:bg-white md:shadow-sm md:border md:border-gray-200">
+                        <div id="tab-bg" class="absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] bg-white rounded-lg shadow-sm transition-all duration-300 ease-out md:bg-gray-100"></div>
+                        <button onclick="switchChatTab('agent')" class="flex-1 py-1.5 rounded-lg text-sm z-10 transition-colors duration-300 text-slate-800 font-semibold focus:outline-none" id="tab-btn-agent">Agent Support</button>
+                        <button onclick="switchChatTab('sales')" class="flex-1 py-1.5 rounded-lg text-sm z-10 transition-colors duration-300 text-gray-500 focus:outline-none" id="tab-btn-sales">Sales Team</button>
+                    </div>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-4 custom-scroll space-y-2 md:px-0">
+                    <div id="chatLoader" class="text-center py-10 text-gray-400">
+                        <i class="fas fa-circle-notch fa-spin text-2xl"></i><p class="text-xs mt-2">Syncing conversations...</p>
+                    </div>
+                    
+                    <div class="md:max-w-2xl md:mx-auto">
+                        <div id="agent-list" class="space-y-3 transition-opacity duration-300"></div>
+                        <div id="sales-list" class="space-y-3 hidden transition-opacity duration-300"></div>
+                    </div>
+
+                    <div id="empty-state" class="hidden flex flex-col items-center justify-center pt-20 text-gray-400">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                            <i class="far fa-comments text-2xl text-gray-300"></i>
+                        </div>
+                        <p>No active conversations.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sidebarOverlay" class="fixed inset-0 z-[60] hidden" aria-hidden="true">
+                <div onclick="toggleSidebar()" class="absolute inset-0 bg-black/20 backdrop-blur-[2px] transition-opacity opacity-0 duration-300" id="sidebarBackdrop"></div>
+                <div id="sidebarPanel" class="absolute left-0 top-0 bottom-0 w-[280px] md:w-[320px] bg-white shadow-2xl transform -translate-x-full flex flex-col border-r border-gray-100">
+                    <div class="p-6 pb-4 border-b border-gray-100 bg-gray-50/50">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-lg font-bold text-gray-800">Research Connect</h2>
+                            <button onclick="toggleSidebar()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-500 transition-colors">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="flex items-center space-x-3 mb-2">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-ios-blue to-purple-500 flex items-center justify-center text-white font-bold text-lg shadow-md"> <i class="fas fa-user">
+                                <!--Tab to edit-->
+                            </i> </div>
+                            <div>
+                                <p class="text-sm font-bold text-gray-900" id="uname">User Name</p>
+                                <p class="text-xs text-gray-500" id="umail">client@research.com</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-3 space-y-1">
+                        <button onclick="switchPage('client-dashboard')" class="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-100 text-gray-700 transition-colors group">
+                            <div class="w-8 h-8 rounded-lg bg-blue-50 text-ios-blue flex items-center justify-center group-hover:bg-white"><i class="fas fa-house"></i></div>
+                            <span class="font-medium">Home</span>
+                        </button>
+                        <button onclick="switchPage('client-conversations')" class="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-100 text-gray-700 transition-colors group">
+                            <div class="w-8 h-8 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center group-hover:bg-white"><i class="fas fa-inbox"></i></div>
+                            <span class="font-medium">Inbox</span>
+                        </button>
+                        <button onclick="switchPage('client-files')" class="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-100 text-gray-700 transition-colors group">
+                            <div class="w-8 h-8 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center group-hover:bg-white"><i class="fas fa-folder"></i></div>
+                            <span class="font-medium">Files</span>
+                        </button>
+                        <button onclick="switchPage('client-payments')" class="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-100 text-gray-700 transition-colors group">
+                            <div class="w-8 h-8 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center group-hover:bg-white"><i class="fas fa-inr"></i></div>
+                            <span class="font-medium">Payments</span>
+                        </button>
+                      
+                    </div>
+                    <div class="p-4 border-t border-gray-100 bg-gray-50/50">
+                        <button onclick="openLogoutModal()" class="w-full flex items-center justify-center space-x-2 p-3 rounded-xl bg-white border border-gray-200 text-ios-red hover:bg-red-50 hover:border-red-100 transition-all shadow-sm">
+                            <i class="fas fa-sign-out-alt"></i><span class="font-semibold">Log Out</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <div id="chatModal" class="fixed inset-0 z-[100] hidden" role="dialog">
+            <div onclick="closeChat()" class="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity opacity-0" id="chatBackdrop"></div>
+            
+            <div id="chatPanel" class="absolute bottom-0 w-full h-[95vh] bg-white rounded-t-[30px] shadow-2xl transform translate-y-full transition-transform duration-300 ease-out 
+                md:top-1/2 md:left-1/2 md:bottom-auto md:w-[450px] md:h-[650px] md:max-h-[90vh] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-[24px] flex flex-col overflow-hidden">
+                
+                <div class="px-5 py-4 bg-white/90 backdrop-blur border-b border-gray-100 flex justify-between items-center z-20 md:rounded-t-[24px]">
+                    <div class="flex items-center space-x-3">
+                        <button onclick="closeChat()" class="text-blue-500 pr-2 md:hidden"><i class="fas fa-chevron-left text-lg"></i></button>
+                        <div class="relative">
+                            <div class="w-10 h-10 bg-gradient-to-tr from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm" id="chatHeaderAvatar">A</div>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm leading-tight" id="chatHeaderName">Agent Name</h3>
+                            <p class="text-[10px] text-gray-400 uppercase font-bold" id="chatHeaderOrder">Order #1234</p>
+                        </div>
+                    </div>
+                    <button onclick="closeChat()" class="hidden md:block w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 transition-colors">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div id="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 scroll-smooth"></div>
+
+                <div class="p-3 bg-white border-t border-gray-100 pb-8 sm:pb-3 md:rounded-b-[24px]">
+                    <div class="flex items-end space-x-2 bg-gray-100 p-1.5 rounded-3xl">
+                        <textarea id="msgInput" rows="1" class="flex-1 bg-transparent border-0 focus:ring-0 text-sm max-h-24 py-2.5 px-3 resize-none placeholder-gray-400" placeholder="Type a message..."></textarea>
+                        <button onclick="sendMessage()" class="p-2 bg-blue-600 text-white rounded-full w-9 h-9 flex items-center justify-center hover:bg-blue-700 shadow-md transition-all active:scale-90 flex-none"><i class="fas fa-arrow-up text-xs"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="customLogoutModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center px-4">
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0" id="logoutBackdrop"></div>
+            <div id="logoutCard" class="bg-white rounded-[24px] w-full max-w-sm p-6 shadow-2xl relative z-10 transform scale-95 opacity-0 transition-all duration-200">
+                <div class="w-14 h-14 rounded-full bg-red-100 mx-auto flex items-center justify-center mb-4 text-ios-red text-2xl"><i class="fas fa-power-off"></i></div>
+                <h3 class="text-xl font-bold text-center text-gray-900 mb-2">Log Out</h3>
+                <p class="text-gray-500 text-center text-sm mb-6">Are you sure you want to sign out?</p>
+                <div class="flex space-x-3">
+                    <button onclick="closeLogoutModal()" class="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">Cancel</button>
+                    <button onclick="confirmLogout()" class="flex-1 py-3 px-4 bg-ios-red hover:bg-red-600 text-white rounded-xl font-medium transition-colors shadow-lg shadow-red-200">Log Out</button>
+                </div>
+            </div>
+        </div>
+
+        <nav class="md:hidden flex-none bg-white/90 backdrop-blur-xl border-t border-ios-border h-[83px] w-full absolute bottom-0 z-30 pb-5">
+            <ul class="flex justify-around items-center h-full px-1">
+                <li class="flex-1 group"><button onclick="switchPage('client-dashboard')" class="nav-btn w-full flex flex-col items-center justify-center text-gray-400"><i class="fas fa-house text-xl mb-1"></i><span class="text-[10px]">Home</span></button></li>
+                <li class="flex-1 group"><button onclick="switchPage('client-conversations')" class="nav-btn w-full flex flex-col items-center justify-center text-ios-blue"><i class="fas fa-inbox text-xl mb-1"></i><span class="text-[10px]">Inbox</span></button></li>
+                <li class="flex-1 group"><button onclick="switchPage('client-files')" class="nav-btn w-full flex flex-col items-center justify-center text-gray-400"><i class="fas fa-folder text-xl mb-1"></i><span class="text-[10px]">Files</span></button></li>
+                <li class="flex-1 group"><button onclick="switchPage('client-payments')" class="nav-btn w-full flex flex-col items-center justify-center text-gray-400"><i class="fas fa-inr text-xl mb-1"></i><span class="text-[10px]">Pay</span></button></li>
+               
+            </ul>
+        </nav>
+    </div>
+
+    <script>
+        // --- Navigation Logic ---
+        function switchPage(page) {
+            
+            window.location.href = `/${page}`; 
+        }
+
+        // --- Sidebar Logic ---
+        function toggleSidebar() {
+            const overlay = document.getElementById('sidebarOverlay');
+            const panel = document.getElementById('sidebarPanel');
+            const backdrop = document.getElementById('sidebarBackdrop');
+
+            if (overlay.classList.contains('hidden')) {
+                overlay.classList.remove('hidden');
+                setTimeout(() => {
+                    backdrop.classList.remove('opacity-0');
+                    panel.classList.remove('-translate-x-full');
+                }, 10);
+            } else {
+                backdrop.classList.add('opacity-0');
+                panel.classList.add('-translate-x-full');
+                setTimeout(() => overlay.classList.add('hidden'), 400);
+            }
+        }
+document.getElementById("uname").innerText = localStorage.getItem("uname")
+            document.getElementById("umail").innerText = localStorage.getItem("umail")
+   
+        // --- Logout Logic ---
+        const logoutModal = document.getElementById('customLogoutModal');
+        const logoutCard = document.getElementById('logoutCard');
+        const logoutBackdrop = document.getElementById('logoutBackdrop');
+
+        function openLogoutModal() {
+            if(!document.getElementById('sidebarOverlay').classList.contains('hidden')) toggleSidebar();
+            logoutModal.classList.remove('hidden');
+            setTimeout(() => {
+                logoutBackdrop.classList.remove('opacity-0');
+                logoutCard.classList.remove('scale-95', 'opacity-0');
+                logoutCard.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeLogoutModal() {
+            logoutBackdrop.classList.add('opacity-0');
+            logoutCard.classList.remove('scale-100', 'opacity-100');
+            logoutCard.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => logoutModal.classList.add('hidden'), 200);
+        }
+
+        function confirmLogout() {
+            const btn = logoutCard.querySelectorAll('button')[1];
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            setTimeout(() => location.reload(), 1000);
+        }
+
+        // --- Chat Modal Override for Responsive Behavior ---
+        // (Assuming chats.js handles logic, we ensure open/close works for desktop centering)
+        
+        // This patch ensures the classes work for both mobile (slide up) and desktop (center)
+        window.openChat = function(id, name, type) { 
+            // This needs to link to your existing chats.js openChat logic. 
+            // Since chats.js isn't visible here, I'll provide the UI toggle logic.
+            // If chats.js exists, ensure it toggles the classes below.
+            
+            const modal = document.getElementById('chatModal');
+            const panel = document.getElementById('chatPanel');
+            const backdrop = document.getElementById('chatBackdrop');
+            
+            // Set dummy data for UI demo
+            document.getElementById('chatHeaderName').innerText = name || "Support Agent";
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0');
+                if(window.innerWidth >= 768) {
+                    panel.classList.remove('translate-y-full'); // Remove slide for desktop
+                    // Animation handled by opacity/CSS
+                } else {
+                    panel.classList.remove('translate-y-full'); // Slide up for mobile
+                }
+            }, 10);
+        }
+
+        window.closeChat = function() {
+            const modal = document.getElementById('chatModal');
+            const panel = document.getElementById('chatPanel');
+            const backdrop = document.getElementById('chatBackdrop');
+
+            backdrop.classList.add('opacity-0');
+            
+            if(window.innerWidth >= 768) {
+                 // Desktop
+            } else {
+                 panel.classList.add('translate-y-full');
+            }
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                if(window.innerWidth >= 768) panel.classList.add('translate-y-full'); // Reset
+            }, 300);
+        }
+    </script>
+
+<script src='chats.js'>
+
+</script>
+
+</body>
+</html>

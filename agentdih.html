@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Connect | Agent Portal</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { brand: { 50:'#eff6ff', 100:'#dbeafe', 600:'#2563eb', 900:'#1e3a8a' } },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .fade-in { animation: fadeIn 0.2s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        /* Custom Select Options */
+        .custom-select-options { display: none; }
+        .custom-select.active .custom-select-options { display: block; animation: fadeIn 0.1s ease-out; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-screen flex flex-col md:flex-row overflow-hidden">
+
+    <aside class="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 h-full z-30 shadow-sm">
+        <div class="p-6 border-b border-slate-100 flex items-center gap-3">
+            <div class="w-8 h-8 bg-brand-600 text-white rounded-lg flex items-center justify-center font-bold text-lg">A</div>
+            <h1 class="font-bold text-lg leading-tight text-slate-800">Agent<br>Portal</h1>
+        </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <button onclick="switchTab('orders')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-brand-50 text-brand-600 font-bold transition" id="nav-orders"><i class="fas fa-tasks w-5"></i> <span>My Orders</span></button>
+            <button onclick="switchTab('inbox')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 text-slate-500 font-medium transition" id="nav-inbox"><i class="fas fa-comment-alt w-5"></i> <span>Inbox</span></button>
+            <button onclick="switchTab('files')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 text-slate-500 font-medium transition" id="nav-files"><i class="fas fa-folder-open w-5"></i> <span>Files</span></button>
+        </nav>
+        <div class="p-4 border-t border-slate-100">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600" id="userAvatar">A</div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold truncate" id="userNameDisplay">Agent</p>
+                    <button onclick="auth.signOut()" class="text-xs text-red-500 hover:underline">Logout</button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <header class="md:hidden h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 z-40">
+        <span class="font-bold text-slate-900 text-lg">Agent Portal</span>
+        <button onclick="toggleMobileMenu()" class="text-slate-600 p-2"><i class="fas fa-bars text-xl"></i></button>
+    </header>
+
+    <div id="mobileMenu" class="fixed inset-0 z-50 bg-white transform -translate-x-full transition-transform duration-300 md:hidden flex flex-col">
+        <div class="p-4 border-b flex justify-between items-center">
+            <span class="font-bold text-lg">Menu</span>
+            <button onclick="toggleMobileMenu()" class="p-2"><i class="fas fa-times"></i></button>
+        </div>
+        <nav class="p-4 space-y-4">
+            <button onclick="switchTab('orders'); toggleMobileMenu()" class="w-full text-left font-bold text-lg">Orders</button>
+            <button onclick="switchTab('inbox'); toggleMobileMenu()" class="w-full text-left font-bold text-lg">Inbox</button>
+            <button onclick="switchTab('files'); toggleMobileMenu()" class="w-full text-left font-bold text-lg">Files</button>
+            <button onclick="auth.signOut()" class="w-full text-left text-red-500 text-lg mt-4">Logout</button>
+        </nav>
+    </div>
+
+    <main class="flex-1 flex flex-col h-full relative overflow-hidden bg-slate-50">
+        
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 custom-scroll pb-24 md:pb-8">
+            
+            <div id="view-orders" class="view-section fade-in">
+                <h2 class="text-2xl font-bold text-slate-800 mb-6">Assigned Work</h2>
+                <div id="loadingOrders" class="text-center py-10 text-slate-400 hidden"><i class="fas fa-circle-notch fa-spin text-2xl"></i></div>
+                <div id="orderList" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5"></div>
+                <div id="emptyOrders" class="hidden text-center py-20 text-slate-400"><i class="fas fa-box-open text-3xl mb-2"></i><p>No active orders.</p></div>
+            </div>
+
+            <div id="view-inbox" class="view-section hidden fade-in">
+                <h2 class="text-2xl font-bold text-slate-800 mb-6">Messages</h2>
+                <div id="chatList" class="space-y-3 max-w-3xl"></div>
+            </div>
+
+            <div id="view-files" class="view-section hidden fade-in">
+                <h2 class="text-2xl font-bold text-slate-800 mb-6">Project Files</h2>
+                <div id="fileList" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+            </div>
+
+        </div>
+    </main>
+
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 flex justify-around items-center z-30 pb-safe">
+        <button onclick="switchTab('orders')" class="nav-item-mobile flex flex-col items-center text-brand-600 p-2"><i class="fas fa-tasks text-lg"></i><span class="text-[10px]">Orders</span></button>
+        <button onclick="switchTab('inbox')" class="nav-item-mobile flex flex-col items-center text-slate-400 p-2"><i class="fas fa-comment-alt text-lg"></i><span class="text-[10px]">Inbox</span></button>
+        <button onclick="switchTab('files')" class="nav-item-mobile flex flex-col items-center text-slate-400 p-2"><i class="fas fa-folder text-lg"></i><span class="text-[10px]">Files</span></button>
+    </nav>
+
+    <div id="editModal" class="fixed inset-0 z-50 hidden" role="dialog">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeModal('editModal')"></div>
+        <div class="absolute bottom-0 md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-white w-full md:w-[500px] rounded-t-2xl md:rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto fade-in">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-slate-900">Manage Order</h3>
+                <button onclick="closeModal('editModal')" class="text-slate-400"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <input type="hidden" id="editOrdId">
+            <div class="space-y-4">
+                
+                <div class="relative custom-select" id="statusSelect">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Status</label>
+                    <button onclick="toggleDropdown('statusSelect')" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-left flex justify-between items-center mt-1">
+                        <span class="selected-text">Select Status</span> <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="custom-select-options absolute w-full bg-white border border-slate-200 rounded-xl mt-1 shadow-lg z-20">
+                        <div onclick="selectOption('statusSelect', 'In Progress')" class="px-4 py-2 hover:bg-slate-50 cursor-pointer">In Progress</div>
+                        <div onclick="selectOption('statusSelect', 'Review')" class="px-4 py-2 hover:bg-slate-50 cursor-pointer">Review</div>
+                        <div onclick="selectOption('statusSelect', 'Finished')" class="px-4 py-2 hover:bg-slate-50 cursor-pointer">Finished</div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase">Progress Step</label>
+                    <input type="range" id="editProgress" min="1" max="4" step="1" class="w-full mt-2 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-600" oninput="document.getElementById('progVal').innerText = this.value + '/4'">
+                    <div class="text-right text-xs font-bold text-brand-600 mt-1" id="progVal">1/4</div>
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase">Total Payment ($)</label>
+                    <input type="number" id="editPayment" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mt-1 outline-none">
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button onclick="saveOrderChanges()" class="flex-1 bg-brand-600 text-white font-bold py-3 rounded-xl hover:bg-brand-700">Save Changes</button>
+                    <button onclick="initiateQuitOrder()" class="px-4 py-3 bg-red-50 text-red-500 font-bold rounded-xl hover:bg-red-100">Quit Order</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="deliverModal" class="fixed inset-0 z-50 hidden" role="dialog">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeModal('deliverModal')"></div>
+        <div class="absolute bottom-0 md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-white w-full md:w-[500px] rounded-t-2xl md:rounded-2xl p-6 shadow-2xl fade-in">
+            <h3 class="text-xl font-bold mb-1 text-slate-900">Send Deliverables</h3>
+            <p class="text-xs text-slate-500 mb-4">Upload files one by one, then send to client.</p>
+            
+            <input type="hidden" id="delOrderId"><input type="hidden" id="delClientEmail">
+            
+            <div class="flex gap-2 mb-4">
+                <input type="file" id="delFileInput" class="hidden" onchange="handleFileStage()">
+                <button onclick="document.getElementById('delFileInput').click()" class="flex-1 border-2 border-dashed border-slate-300 rounded-xl p-4 text-slate-500 hover:border-brand-500 hover:text-brand-600 transition flex flex-col items-center">
+                    <i class="fas fa-cloud-upload-alt text-2xl mb-1"></i>
+                    <span class="text-xs font-bold">Click to Attach</span>
+                </button>
+            </div>
+
+            <div id="stagedFilesList" class="space-y-2 mb-4 max-h-40 overflow-y-auto custom-scroll"></div>
+
+            <button onclick="sendDeliverables()" id="btnSendDel" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-500/30">Send to Client via Email</button>
+        </div>
+    </div>
+
+    <div id="chatModal" class="fixed inset-0 z-[80] hidden" role="dialog">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeChat()"></div>
+        <div id="chatPanel" class="absolute bottom-0 w-full md:w-[500px] md:right-0 md:top-0 h-[90vh] md:h-full bg-white rounded-t-2xl md:rounded-none shadow-2xl flex flex-col transform translate-y-full md:translate-x-full transition-transform duration-300">
+            <div class="p-4 border-b flex justify-between items-center bg-slate-50">
+                <div>
+                    <h3 class="font-bold text-slate-800" id="chatClientName">Client</h3>
+                    <p class="text-xs text-slate-500" id="chatOrderTitle">Order</p>
+                </div>
+                <button onclick="closeChat()" class="w-8 h-8 bg-white rounded-full text-slate-400 shadow-sm flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-white"></div>
+            <div class="p-4 border-t bg-slate-50 flex gap-2">
+                <input type="text" id="chatInput" class="flex-1 border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Type...">
+                <button onclick="sendAgentMessage()" class="bg-brand-600 text-white w-10 rounded-xl"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="quitModal1" class="fixed inset-0 z-[90] hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm text-center">
+            <i class="fas fa-exclamation-triangle text-yellow-500 text-4xl mb-4"></i>
+            <h3 class="text-lg font-bold">Quit Order?</h3>
+            <p class="text-sm text-slate-500 mb-6">Are you sure you want to drop this order?</p>
+            <div class="flex gap-2">
+                <button onclick="closeModal('quitModal1')" class="flex-1 py-2 bg-slate-100 rounded-xl">Cancel</button>
+                <button onclick="quitStep2()" class="flex-1 py-2 bg-red-500 text-white rounded-xl font-bold">Yes, Proceed</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="quitModal2" class="fixed inset-0 z-[91] hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm text-center">
+            <i class="fas fa-radiation text-red-600 text-4xl mb-4"></i>
+            <h3 class="text-lg font-bold">Serious Warning</h3>
+            <p class="text-sm text-slate-500 mb-6">This will negatively impact your completion rate. Are you absolutely certain?</p>
+            <div class="flex gap-2">
+                <button onclick="closeModal('quitModal2')" class="flex-1 py-2 bg-slate-100 rounded-xl">Go Back</button>
+                <button onclick="quitStep3()" class="flex-1 py-2 bg-red-600 text-white rounded-xl font-bold">I Understand</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="quitModal3" class="fixed inset-0 z-[92] hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm text-center">
+            <h3 class="text-lg font-bold mb-2">Final Confirmation</h3>
+            <p class="text-sm text-slate-500 mb-4">Type <strong id="quitCaptchaCode" class="bg-slate-100 px-1 border"></strong> to confirm.</p>
+            <input type="text" id="quitCaptchaInput" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-center uppercase font-bold tracking-widest mb-4">
+            <button onclick="executeQuitOrder()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold">Confirm Quit</button>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed top-5 right-5 z-[100] transform translate-x-[150%] transition-transform duration-300">
+        <div class="bg-slate-900 text-white px-6 py-3 rounded-xl shadow-xl flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full bg-green-400" id="toastIcon"></div>
+            <span id="toastMsg" class="text-sm font-medium">Notification</span>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBDeDc6pWhghXmGYg9QYQ3nVAGTpo1u5AM",
+            authDomain: "research-craft.firebaseapp.com",
+            projectId: "research-craft",
+            storageBucket: "research-craft.firebasestorage.app",
+            messagingSenderId: "284823836570",
+            appId: "1:284823836570:web:fb0d93cdf92368525d8c23",
+            measurementId: "G-6H5BS98612"
+        };
+        const BREVO_KEY = "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";
+
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        let currentAgent = null;
+        let activeChatId = null;
+        let chatUnsubscribe = null;
+        let quitTargetId = null;
+        let stagedFiles = [];
+
+        // --- 2. AUTH ---
+        auth.onAuthStateChanged(user => {
+            if(user) {
+                currentAgent = user;
+                document.getElementById('userNameDisplay').innerText = user.email;
+                loadOrders();
+                loadFiles();
+                loadChats();
+            } else {
+                console.log("Not logged in");
+                // Redirect logic here
+            }
+        });
+
+        // --- 3. ORDERS LOGIC (Fixing 'failed-precondition' by client-side sort) ---
+        function loadOrders() {
+            if(!currentAgent) return;
+            const list = document.getElementById('orderList');
+            const loader = document.getElementById('loadingOrders');
+            const empty = document.getElementById('emptyOrders');
+
+            loader.classList.remove('hidden');
+            empty.classList.add('hidden');
+            list.innerHTML = '';
+
+            db.collection('orders')
+              .where('agentId', '==', currentAgent.uid)
+              .onSnapshot(snap => {
+                  loader.classList.add('hidden');
+                  list.innerHTML = '';
+                  
+                  if(snap.empty) {
+                      empty.classList.remove('hidden');
+                      return;
+                  }
+                  empty.classList.add('hidden');
+
+                  // Client-side Sorting
+                  let orders = [];
+                  snap.forEach(doc => orders.push({id: doc.id, ...doc.data()}));
+                  orders.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+                  orders.forEach(d => {
+                      const badgeColor = d.status === 'Finished' ? 'bg-green-100 text-green-700' : 'bg-blue-50 text-blue-600';
+                      
+                      list.innerHTML += `
+                      <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all fade-in">
+                          <div class="flex justify-between items-start mb-3">
+                              <div>
+                                  <h4 class="font-bold text-slate-800">${d.title}</h4>
+                                  <p class="text-xs text-slate-500 font-mono">${d.clientEmail}</p>
+                              </div>
+                              <span class="text-[10px] font-bold px-2 py-1 rounded uppercase ${badgeColor}">${d.status}</span>
+                          </div>
+                          
+                          <div class="space-y-3 mb-4">
+                              <div>
+                                  <div class="flex justify-between text-xs text-slate-400 mb-1">
+                                      <span>Progress</span> <span>${d.currentStep}/4</span>
+                                  </div>
+                                  <div class="w-full bg-slate-100 h-1.5 rounded-full"><div class="bg-brand-600 h-1.5 rounded-full" style="width:${(d.currentStep/4)*100}%"></div></div>
+                              </div>
+                              <div class="flex justify-between text-xs bg-slate-50 p-2 rounded-lg">
+                                  <span class="text-slate-500">Pay: <strong class="text-slate-800">$${d.payment}</strong></span>
+                                  <span class="text-slate-500">Due: <strong class="${new Date(d.deadline)<new Date()?'text-red-500':'text-slate-800'}">${d.deadline}</strong></span>
+                              </div>
+                          </div>
+
+                          <div class="grid grid-cols-3 gap-2">
+                              <button onclick="openEditModal('${d.id}')" class="py-2 bg-slate-100 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-200">Manage</button>
+                              <button onclick="openChat('${d.id}','${d.clientEmail}','${d.title}')" class="py-2 bg-blue-50 text-brand-600 text-xs font-bold rounded-lg hover:bg-blue-100">Chat</button>
+                              <button onclick="openDeliverModal('${d.id}','${d.clientEmail}')" class="py-2 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-lg hover:bg-emerald-100">Deliver</button>
+                          </div>
+                      </div>`;
+                  });
+              });
+        }
+
+        // --- 4. ORDER CRUD ACTIONS ---
+        async function openEditModal(id) {
+            const doc = await db.collection('orders').doc(id).get();
+            const d = doc.data();
+            
+            document.getElementById('editModal').classList.remove('hidden');
+            document.getElementById('editOrdId').value = id;
+            document.getElementById('editProgress').value = d.currentStep;
+            document.getElementById('progVal').innerText = d.currentStep + '/4';
+            document.getElementById('editPayment').value = d.payment;
+            
+            document.querySelector('#statusSelect .selected-text').innerText = d.status;
+            quitTargetId = id; // Store for quit flow
+        }
+
+        async function saveOrderChanges() {
+            const id = document.getElementById('editOrdId').value;
+            const status = document.querySelector('#statusSelect .selected-text').innerText;
+            const step = document.getElementById('editProgress').value;
+            const pay = document.getElementById('editPayment').value;
+
+            if(status === 'Select Status') return showToast("Select a status", "error");
+
+            await db.collection('orders').doc(id).update({
+                status: status,
+                currentStep: parseInt(step),
+                payment: pay
+            });
+            closeModal('editModal');
+            showToast("Order Updated");
+        }
+
+        // --- 5. QUIT ORDER FLOW ---
+        function initiateQuitOrder() {
+            closeModal('editModal');
+            document.getElementById('quitModal1').classList.remove('hidden');
+        }
+        function quitStep2() {
+            closeModal('quitModal1');
+            document.getElementById('quitModal2').classList.remove('hidden');
+        }
+        function quitStep3() {
+            closeModal('quitModal2');
+            const code = Math.random().toString(36).substring(2,6).toUpperCase();
+            document.getElementById('quitCaptchaCode').innerText = code;
+            document.getElementById('quitCaptchaInput').value = '';
+            document.getElementById('quitModal3').classList.remove('hidden');
+        }
+        async function executeQuitOrder() {
+            const code = document.getElementById('quitCaptchaCode').innerText;
+            const input = document.getElementById('quitCaptchaInput').value.toUpperCase();
+            
+            if(code !== input) return showToast("Wrong Code", "error");
+
+            // 1. Find other agents
+            const snap = await db.collection('users').where('role','==','Agent').get();
+            const agents = [];
+            snap.forEach(doc => { if(doc.id !== currentAgent.uid) agents.push({id:doc.id, ...doc.data()}) });
+
+            if(agents.length === 0) {
+                alert("No other agents available! Cannot quit.");
+                return closeModal('quitModal3');
+            }
+
+            // 2. Pick Random
+            const newAgent = agents[Math.floor(Math.random()*agents.length)];
+
+            // 3. Update Order
+            await db.collection('orders').doc(quitTargetId).update({
+                agentId: newAgent.id,
+                agentName: newAgent.displayName,
+                status: 'Open' // Reset status usually
+            });
+
+            closeModal('quitModal3');
+            showToast(`Order re-assigned to ${newAgent.displayName}`);
+        }
+
+        // --- 6. DELIVERABLES (Brevo Email) ---
+        function openDeliverModal(id, email) {
+            stagedFiles = [];
+            renderStagedFiles();
+            document.getElementById('delOrderId').value = id;
+            document.getElementById('delClientEmail').value = email;
+            document.getElementById('deliverModal').classList.remove('hidden');
+        }
+
+        function handleFileStage() {
+            const input = document.getElementById('delFileInput');
+            const file = input.files[0];
+            if(!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64 = e.target.result.split(',')[1];
+                stagedFiles.push({ name: file.name, content: base64 });
+                renderStagedFiles();
+            };
+            reader.readAsDataURL(file);
+            input.value = ''; // Reset
+        }
+
+        function renderStagedFiles() {
+            const list = document.getElementById('stagedFilesList');
+            list.innerHTML = '';
+            stagedFiles.forEach((f, i) => {
+                list.innerHTML += `
+                <div class="flex justify-between items-center bg-slate-50 p-2 rounded text-sm">
+                    <span class="truncate w-40">${f.name}</span>
+                    <button onclick="stagedFiles.splice(${i},1); renderStagedFiles()" class="text-red-500"><i class="fas fa-trash"></i></button>
+                </div>`;
+            });
+        }
+
+        async function sendDeliverables() {
+            if(stagedFiles.length === 0) return showToast("Attach at least one file", "error");
+            
+            const btn = document.getElementById('btnSendDel');
+            const email = document.getElementById('delClientEmail').value;
+            const orderId = document.getElementById('delOrderId').value;
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+            try {
+                // 1. Send via Brevo
+                await fetch("https://api.brevo.com/v3/smtp/email", {
+                    method: "POST",
+                    headers: { "api-key": BREVO_KEY, "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        sender: { name: "Research Connect Deliveries", email: "delivery@researchconnect.com" },
+                        to: [{ email: email }],
+                        subject: "Your Order is Ready!",
+                        htmlContent: `<h1>Files Attached</h1><p>Please find your deliverables attached.</p>`,
+                        attachment: stagedFiles // Brevo format: [{name, content}]
+                    })
+                });
+
+                // 2. Mark Finished
+                await db.collection('orders').doc(orderId).update({ status: 'Finished', currentStep: 4 });
+
+                closeModal('deliverModal');
+                showToast("Files Sent Successfully!");
+
+            } catch(e) {
+                console.error(e);
+                showToast("Email failed (Check Console)", "error");
+            } finally {
+                btn.innerHTML = 'Send to Client via Email';
+            }
+        }
+
+        // --- 7. CHAT ---
+        function loadChats() {
+            const list = document.getElementById('chatList');
+            db.collection('orders').where('agentId','==',currentAgent.uid).onSnapshot(snap => {
+                list.innerHTML = '';
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    list.innerHTML += `
+                    <div onclick="openChat('${doc.id}','${d.clientEmail}','${d.title}')" class="bg-white p-4 rounded-xl border border-slate-100 flex items-center gap-3 cursor-pointer hover:bg-slate-50">
+                        <div class="w-10 h-10 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold">${d.clientEmail.charAt(0)}</div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-bold text-sm truncate">${d.clientEmail}</h4>
+                            <p class="text-xs text-slate-500 truncate">${d.title}</p>
+                        </div>
+                        <div class="w-2 h-2 bg-red-500 rounded-full ${d.agentUnread ? '' : 'hidden'}"></div>
+                    </div>`;
+                });
+            });
+        }
+
+        function openChat(id, email, title) {
+            activeChatId = id;
+            document.getElementById('chatClientName').innerText = email;
+            document.getElementById('chatOrderTitle').innerText = title;
+            
+            const panel = document.getElementById('chatPanel');
+            document.getElementById('chatModal').classList.remove('hidden');
+            setTimeout(() => {
+                panel.classList.remove('translate-y-full', 'translate-x-full');
+                panel.classList.add('translate-y-0', 'translate-x-0');
+            }, 10);
+
+            const container = document.getElementById('chatMessages');
+            container.innerHTML = '<p class="text-center text-gray-300 mt-10">Loading...</p>';
+            if(chatUnsubscribe) chatUnsubscribe();
+
+            chatUnsubscribe = db.collection('orders').doc(id).collection('messages').orderBy('createdAt','asc').onSnapshot(snap => {
+                if(snap.empty && container.innerHTML.includes('Loading')) container.innerHTML = '<p class="text-center text-gray-300 mt-10">Say hello!</p>';
+                else if(!snap.empty && container.innerHTML.includes('Loading')) container.innerHTML = '';
+
+                snap.docChanges().forEach(change => {
+                    if(change.type === 'added') {
+                        const m = change.doc.data();
+                        const isMe = m.senderRole === 'agent';
+                        container.insertAdjacentHTML('beforeend', `
+                        <div class="flex ${isMe?'justify-end':'justify-start'} mb-2 fade-in">
+                            <div class="px-4 py-2 rounded-2xl text-sm ${isMe?'bg-brand-600 text-white rounded-br-none':'bg-slate-100 text-slate-800 rounded-bl-none'} max-w-[80%]">
+                                ${m.text}
+                            </div>
+                        </div>`);
+                    }
+                });
+                container.scrollTop = container.scrollHeight;
+            });
+        }
+
+        function closeChat() {
+            const panel = document.getElementById('chatPanel');
+            panel.classList.add('translate-y-full', 'translate-x-full');
+            panel.classList.remove('translate-y-0', 'translate-x-0');
+            setTimeout(() => document.getElementById('chatModal').classList.add('hidden'), 300);
+            if(chatUnsubscribe) chatUnsubscribe();
+        }
+
+        async function sendAgentMessage() {
+            const inp = document.getElementById('chatInput');
+            if(!inp.value.trim() || !activeChatId) return;
+            await db.collection('orders').doc(activeChatId).collection('messages').add({
+                text: inp.value, senderRole: 'agent', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            inp.value = '';
+        }
+
+        // --- 8. FILES ---
+        function loadFiles() {
+            const grid = document.getElementById('fileList');
+            // Assuming there's a 'files' collection linked by agentId
+            db.collection('files').where('agentId','==',currentAgent.uid).onSnapshot(snap => {
+                grid.innerHTML = '';
+                snap.forEach(doc => {
+                    const f = doc.data();
+                    grid.innerHTML += `
+                    <div class="bg-white p-4 rounded-xl border border-slate-100 flex justify-between items-center">
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <div class="bg-slate-100 p-2 rounded"><i class="fas fa-file text-slate-500"></i></div>
+                            <div class="truncate">
+                                <p class="text-sm font-bold truncate">${f.filename}</p>
+                                <p class="text-xs text-slate-400">${new Date(f.createdAt.seconds*1000).toLocaleDateString()}</p>
+                            </div>
+                        </div>
+                        <a href="${f.url}" target="_blank" class="text-brand-600 hover:bg-brand-50 p-2 rounded"><i class="fas fa-download"></i></a>
+                    </div>`;
+                });
+            });
+        }
+
+        // --- UTILS ---
+        function switchTab(id) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${id}`).classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('bg-brand-50', 'text-brand-600');
+                el.classList.add('text-slate-500');
+            });
+            const active = document.getElementById(`nav-${id}`);
+            if(active) { active.classList.add('bg-brand-50', 'text-brand-600'); active.classList.remove('text-slate-500'); }
+        }
+
+        function toggleMobileMenu() {
+            const m = document.getElementById('mobileMenu');
+            if(m.classList.contains('-translate-x-full')) m.classList.remove('-translate-x-full');
+            else m.classList.add('-translate-x-full');
+        }
+
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        
+        function toggleDropdown(id) {
+            const el = document.getElementById(id);
+            el.classList.toggle('active');
+        }
+        function selectOption(parentId, val) {
+            document.querySelector(`#${parentId} .selected-text`).innerText = val;
+            toggleDropdown(parentId);
+        }
+
+        function showToast(msg, type='success') {
+            const t = document.createElement('div');
+            t.className = `fixed top-5 right-5 z-[100] px-6 py-3 rounded-xl shadow-xl flex items-center gap-3 text-white ${type==='error'?'bg-red-600':'bg-slate-900'} fade-in`;
+            t.innerHTML = `<div class="w-2 h-2 rounded-full ${type==='error'?'bg-white':'bg-green-400'}"></div><span class="text-sm font-medium">${msg}</span>`;
+            document.body.appendChild(t);
+            setTimeout(() => { t.remove() }, 3000);
+        }
+
+        window.onclick = function(e) {
+            if (!e.target.closest('.custom-select')) {
+                document.querySelectorAll('.custom-select').forEach(el => el.classList.remove('active'));
+            }
+        }
+    </script>
+</body>
+</html>

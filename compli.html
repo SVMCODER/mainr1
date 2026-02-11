@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Connect | Sales Admin</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#eff6ff', 100: '#dbeafe', 600: '#2563eb', 700: '#1d4ed8', 900: '#1e3a8a' }
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .fade-in { animation: fadeIn 0.2s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Modal Transitions */
+        .modal-enter { opacity: 0; transform: scale(0.95); }
+        .modal-enter-active { opacity: 1; transform: scale(1); transition: all 0.2s ease-out; }
+        .modal-exit { opacity: 0; transform: scale(0.95); transition: all 0.2s ease-in; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-screen flex flex-col md:flex-row overflow-hidden">
+
+    <aside class="hidden md:flex flex-col w-64 bg-brand-900 text-white h-full z-30 shadow-xl">
+        <div class="p-6 border-b border-white/10 flex items-center gap-3">
+            <div class="w-8 h-8 bg-white text-brand-900 rounded-lg flex items-center justify-center font-bold text-lg">R</div>
+            <h1 class="font-bold text-lg leading-tight">Research<br>Connect</h1>
+        </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <button onclick="switchTab('clients')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition" id="nav-clients"><i class="fas fa-users w-5"></i> <span>Clients</span></button>
+            <button onclick="switchTab('agents')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition" id="nav-agents"><i class="fas fa-user-tie w-5"></i> <span>Agents</span></button>
+            <button onclick="switchTab('orders')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition" id="nav-orders"><i class="fas fa-clipboard-list w-5"></i> <span>Orders</span></button>
+            <button onclick="switchTab('payments')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition" id="nav-payments"><i class="fas fa-file-invoice-dollar w-5"></i> <span>Payments</span></button>
+        </nav>
+        <div class="p-4 border-t border-white/10">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-xs">SA</div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium truncate">Sales Admin</p>
+                    <button onclick="auth.signOut()" class="text-xs text-white/70 hover:text-white">Logout</button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <header class="md:hidden h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 z-40 relative">
+        <span class="font-bold text-brand-900 text-lg">Research Connect</span>
+        <button onclick="toggleMobileSidebar()" class="text-slate-600 p-2"><i class="fas fa-bars text-xl"></i></button>
+    </header>
+
+    <div id="mobileSidebarBackdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden transition-opacity"></div>
+    <div id="mobileSidebar" class="fixed inset-y-0 left-0 w-64 bg-brand-900 text-white z-50 transform -translate-x-full transition-transform duration-300 md:hidden flex flex-col">
+        <div class="p-6 border-b border-white/10 font-bold text-xl">Menu</div>
+        <nav class="flex-1 p-4 space-y-2">
+            <button onclick="switchTab('clients'); toggleMobileSidebar()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10"><i class="fas fa-users"></i> Clients</button>
+            <button onclick="switchTab('agents'); toggleMobileSidebar()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10"><i class="fas fa-user-tie"></i> Agents</button>
+            <button onclick="switchTab('orders'); toggleMobileSidebar()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10"><i class="fas fa-clipboard-list"></i> Orders</button>
+            <button onclick="switchTab('payments'); toggleMobileSidebar()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10"><i class="fas fa-check-circle"></i> Payments</button>
+        </nav>
+        <div class="p-4"><button onclick="auth.signOut()" class="w-full py-2 bg-white/10 rounded text-sm">Logout</button></div>
+    </div>
+
+    <main class="flex-1 flex flex-col h-full relative overflow-hidden bg-slate-50">
+        
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 custom-scroll pb-24 md:pb-8">
+            
+            <div id="view-clients" class="view-section hidden fade-in">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    <h2 class="text-2xl font-bold text-slate-800">Clients</h2>
+                    <div class="flex gap-2 w-full md:w-auto">
+                        <div class="relative w-full md:w-64">
+                            <i class="fas fa-search absolute left-3 top-3 text-gray-400 text-xs"></i>
+                            <input type="text" onkeyup="filterList('clientList', this.value)" placeholder="Search Name/Email..." class="pl-9 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm w-full outline-none focus:border-brand-600">
+                        </div>
+                        <button onclick="openUserModal('Client')" class="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-brand-700 whitespace-nowrap"><i class="fas fa-plus"></i> Add</button>
+                    </div>
+                </div>
+                <div id="clientList" class="grid grid-cols-1 lg:grid-cols-3 gap-4"></div>
+            </div>
+
+            <div id="view-agents" class="view-section hidden fade-in">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    <h2 class="text-2xl font-bold text-slate-800">Agents</h2>
+                    <div class="flex gap-2 w-full md:w-auto">
+                        <div class="relative w-full md:w-64">
+                            <i class="fas fa-search absolute left-3 top-3 text-gray-400 text-xs"></i>
+                            <input type="text" onkeyup="filterList('agentList', this.value)" placeholder="Search..." class="pl-9 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm w-full outline-none focus:border-brand-600">
+                        </div>
+                        <button onclick="openUserModal('Agent')" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-slate-900 whitespace-nowrap"><i class="fas fa-plus"></i> Add</button>
+                    </div>
+                </div>
+                <div id="agentList" class="grid grid-cols-1 lg:grid-cols-3 gap-4"></div>
+            </div>
+
+            <div id="view-orders" class="view-section hidden fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800">Orders</h2>
+                    <button onclick="openOrderModal()" class="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-brand-700"><i class="fas fa-plus"></i> Create Order</button>
+                </div>
+                <div id="orderList" class="space-y-4"></div>
+            </div>
+
+            <div id="view-payments" class="view-section hidden fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800">Payments</h2>
+                    <button onclick="openPaymentModal()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-emerald-700"><i class="fas fa-plus"></i> New Request</button>
+                </div>
+                <div id="paymentList" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
+            </div>
+
+        </div>
+    </main>
+
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 flex justify-around items-center z-30 pb-safe">
+        <button onclick="switchTab('clients')" class="nav-item-mobile flex flex-col items-center text-slate-400 p-2"><i class="fas fa-users text-lg"></i><span class="text-[10px]">Clients</span></button>
+        <button onclick="switchTab('agents')" class="nav-item-mobile flex flex-col items-center text-slate-400 p-2"><i class="fas fa-user-tie text-lg"></i><span class="text-[10px]">Agents</span></button>
+        <button onclick="switchTab('orders')" class="nav-item-mobile flex flex-col items-center text-brand-600 p-2"><i class="fas fa-clipboard-list text-lg"></i><span class="text-[10px]">Orders</span></button>
+        <button onclick="switchTab('payments')" class="nav-item-mobile flex flex-col items-center text-slate-400 p-2"><i class="fas fa-check-circle text-lg"></i><span class="text-[10px]">Paid</span></button>
+    </nav>
+
+    <div id="userModal" class="fixed inset-0 z-[60] hidden" role="dialog">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('userModal')"></div>
+        <div class="absolute bottom-0 md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-white w-full md:w-[450px] rounded-t-2xl md:rounded-2xl p-6 shadow-2xl transition-all">
+            <h3 class="text-xl font-bold mb-4 text-slate-900" id="userModalTitle">Add User</h3>
+            <div class="space-y-4">
+                <input type="text" id="userName" placeholder="Full Name" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-brand-600">
+                <input type="email" id="userEmail" placeholder="Email Address" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-brand-600">
+                <input type="hidden" id="userRole">
+                <button onclick="submitCreateUser()" id="btnCreateUser" class="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl hover:bg-slate-800 transition">Create & Email Credentials</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="orderModal" class="fixed inset-0 z-[60] hidden" role="dialog">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('orderModal')"></div>
+        <div class="absolute bottom-0 md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-white w-full md:w-[500px] rounded-t-2xl md:rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-slate-900" id="ordModalTitle">Order Details</h3>
+                <button onclick="closeModal('orderModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="space-y-4">
+                <input type="hidden" id="ordId"> <input type="text" id="ordTitle" placeholder="Project Title" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-brand-600">
+                
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase ml-1">Client Email</label>
+                    <input type="email" id="ordClientEmail" placeholder="client@example.com" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-brand-600">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase ml-1">Price ($)</label>
+                        <input type="number" id="ordPrice" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase ml-1">Deadline</label>
+                        <input type="date" id="ordDate" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none text-slate-600">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase ml-1">Details</label>
+                    <textarea id="ordDesc" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none resize-none"></textarea>
+                </div>
+                
+                <button onclick="submitSaveOrder()" class="w-full bg-brand-600 text-white font-bold py-3 rounded-xl hover:bg-brand-700">Save Order</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="assignModal" class="fixed inset-0 z-[70] hidden" role="dialog">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('assignModal')"></div>
+        <div class="absolute bottom-0 md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-white w-full md:w-[400px] rounded-t-2xl md:rounded-2xl p-6 shadow-2xl">
+            <h3 class="text-xl font-bold mb-4 text-slate-900">Assign Agent</h3>
+            <input type="hidden" id="assignOrderId">
+            
+            <button onclick="executeAutoAssign()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3.5 rounded-xl mb-4 flex items-center justify-center">
+                <i class="fas fa-random mr-2 text-slate-500"></i> Auto-Assign Randomly
+            </button>
+            
+            <div class="flex items-center gap-3 mb-4">
+                <div class="h-px bg-slate-200 flex-1"></div>
+                <span class="text-xs text-slate-400 font-bold">OR BY EMAIL</span>
+                <div class="h-px bg-slate-200 flex-1"></div>
+            </div>
+
+            <div class="space-y-3">
+                <input type="email" id="assignEmail" placeholder="agent@email.com" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none">
+                <button onclick="executeEmailAssign()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-xl">Assign Specific Agent</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="filesModal" class="fixed inset-0 z-[70] hidden" role="dialog">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('filesModal')"></div>
+        <div class="absolute bottom-0 md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-white w-full md:w-[500px] rounded-t-2xl md:rounded-2xl p-6 shadow-2xl max-h-[80vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">Project Files</h3>
+                <button onclick="closeModal('filesModal')" class="text-slate-400"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="filesContainer" class="flex-1 overflow-y-auto custom-scroll space-y-3"></div>
+        </div>
+    </div>
+
+    <div id="paymentModal" class="fixed inset-0 z-[60] hidden" role="dialog">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('paymentModal')"></div>
+        <div class="absolute bottom-0 md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-white w-full md:w-[450px] rounded-t-2xl md:rounded-2xl p-6 shadow-2xl">
+            <h3 class="text-xl font-bold mb-4 text-slate-900">Request Payment</h3>
+            <div class="space-y-4">
+                <input type="text" id="payOrderTitle" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-sm" readonly>
+                <input type="number" id="payAmount" placeholder="Amount ($)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none">
+                <input type="hidden" id="payOrderId"><input type="hidden" id="payClientEmail">
+                <button onclick="submitCreatePayment()" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl">Send Request</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteModal" class="fixed inset-0 z-[90] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('deleteModal')"></div>
+        <div class="bg-white rounded-2xl shadow-2xl p-6 relative z-10 w-full max-w-sm text-center">
+            <div class="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3 text-xl"><i class="fas fa-trash-alt"></i></div>
+            <h3 class="text-lg font-bold">Confirm Deletion</h3>
+            <p class="text-sm text-slate-500 mb-6">Are you sure? This cannot be undone.</p>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="closeModal('deleteModal')" class="py-2.5 bg-slate-100 rounded-xl font-bold text-slate-600">Cancel</button>
+                <button id="btnConfirmDelete" class="py-2.5 bg-red-500 text-white rounded-xl font-bold shadow-lg shadow-red-500/30">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="chatModal" class="fixed inset-0 z-[90] hidden flex items-center justify-center p-4" role="dialog">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeChat()"></div>
+        <div id="chatPanel" class="absolute bottom-0 w-full md:w-[500px] md:right-0 md:top-0 h-[85vh] md:h-full bg-white rounded-t-2xl md:rounded-none shadow-2xl flex flex-col transform translate-y-full md:translate-x-full transition-transform duration-300">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold">C</div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-sm" id="chatClientName">Client</h3>
+                        <p class="text-xs text-slate-500" id="chatOrderTitle">Order</p>
+                    </div>
+                </div>
+                <button onclick="closeChat()" class="w-8 h-8 rounded-full bg-white text-slate-400 hover:text-slate-600 shadow-sm flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-white"></div>
+            <div class="p-4 border-t border-slate-100 bg-slate-50">
+                <div class="flex gap-2">
+                    <input type="text" id="chatInput" class="flex-1 border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none focus:border-brand-500 transition-colors" placeholder="Type a message...">
+                    <button onclick="sendSalesMessage()" class="bg-brand-600 text-white w-10 rounded-xl shadow-lg hover:bg-brand-700 flex items-center justify-center"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed top-5 right-5 z-[100] transform translate-x-[150%] transition-transform duration-300">
+        <div class="bg-slate-900 text-white px-6 py-3 rounded-xl shadow-xl flex items-center gap-3 border border-slate-700">
+            <div id="toastIcon" class="w-2 h-2 rounded-full bg-green-400"></div>
+            <span id="toastMsg" class="text-sm font-medium">Notification</span>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIG ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBDeDc6pWhghXmGYg9QYQ3nVAGTpo1u5AM",
+            authDomain: "research-craft.firebaseapp.com",
+            projectId: "research-craft",
+            storageBucket: "research-craft.firebasestorage.app",
+            messagingSenderId: "284823836570",
+            appId: "1:284823836570:web:fb0d93cdf92368525d8c23",
+            measurementId: "G-6H5BS98612"
+        };
+        const BREVO_KEY = "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";
+
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        let activeChatId = null;
+        let chatUnsubscribe = null;
+
+        // --- AUTH ---
+        auth.onAuthStateChanged(user => {
+            if(user) {
+                initDashboard();
+            } else {
+                console.log("Logged out");
+                // auth.signInAnonymously(); // Uncomment for dev
+            }
+        });
+
+        function initDashboard() {
+            loadClients();
+            loadAgents();
+            loadOrders();
+            loadPayments()
+            switchTab('orders'); // Default View
+        }
+
+        // --- UI UTILS ---
+        function switchTab(id) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${id}`).classList.remove('hidden');
+            
+            // Desktop Sidebar
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('bg-white/10'));
+            const dNav = document.getElementById(`nav-${id}`);
+            if(dNav) dNav.classList.add('bg-white/10');
+
+            // Mobile Nav
+            document.querySelectorAll('.nav-item-mobile').forEach(el => {
+                el.classList.remove('text-brand-600');
+                el.classList.add('text-slate-400');
+            });
+            // Logic to highlight mobile icon based on ID would go here, simplified for brevity
+        }
+
+        function toggleMobileSidebar() {
+            const sb = document.getElementById('mobileSidebar');
+            const bd = document.getElementById('mobileSidebarBackdrop');
+            if (sb.classList.contains('-translate-x-full')) {
+                sb.classList.remove('-translate-x-full');
+                bd.classList.remove('hidden');
+            } else {
+                sb.classList.add('-translate-x-full');
+                bd.classList.add('hidden');
+            }
+        }
+
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        
+        function showToast(msg, type='success') {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            document.getElementById('toastIcon').className = type==='error'?'w-2 h-2 rounded-full bg-red-500':'w-2 h-2 rounded-full bg-green-400';
+            t.classList.remove('translate-x-[150%]');
+            setTimeout(() => t.classList.add('translate-x-[150%]'), 3000);
+        }
+
+        function filterList(listId, query) {
+            const container = document.getElementById(listId);
+            const cards = container.children;
+            const term = query.toLowerCase();
+            for(let card of cards) {
+                if(card.classList.contains('skeleton')) continue;
+                card.style.display = card.innerText.toLowerCase().includes(term) ? 'block' : 'none';
+            }
+        }
+        // --- PAYMENTS & INVOICING (FIXED) ---
+
+        // 1. Load All Payments (Unpaid & Paid)
+        function loadPayments() {
+            const list = document.getElementById('paymentList');
+            
+            // Skeleton / Loading State
+            if(list.innerHTML === '') {
+                list.innerHTML = '<div class="p-10 text-center text-slate-400 col-span-full"><i class="fas fa-circle-notch fa-spin text-2xl"></i><p class="mt-2 text-xs">Loading transactions...</p></div>';
+            }
+
+            db.collection('payments').orderBy('createdAt', 'desc').onSnapshot(snap => {
+                list.innerHTML = '';
+                
+                if (snap.empty) {
+                    list.innerHTML = '<div class="p-10 text-center text-slate-400 col-span-full">No payment records found.</div>';
+                    return;
+                }
+
+                snap.forEach(doc => {
+                    const p = doc.data();
+                    const isPaid = p.status === 'Paid';
+                    const isReview = p.status === 'Review';
+                    
+                    // Status Badge Logic
+                    let badgeClass = 'bg-red-50 text-red-600';
+                    if(isPaid) badgeClass = 'bg-green-50 text-green-600';
+                    else if(isReview) badgeClass = 'bg-yellow-50 text-yellow-600';
+
+                    list.innerHTML += `
+                    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group">
+                        
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <h4 class="font-bold text-slate-800 text-lg">${p.orderTitle || 'Untitled Order'}</h4>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase ${badgeClass}">${p.status}</span>
+                            </div>
+                            <p class="text-xs text-slate-500 font-mono">${p.clientEmail}</p>
+                            <p class="text-[10px] text-slate-400 mt-1">Ref: ${doc.id.substring(0,8)}</p>
+                        </div>
+
+                        <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+                            <h2 class="text-xl font-bold text-slate-900">$${p.amount}</h2>
+                            
+                            <div class="flex gap-2">
+                                ${!isPaid ? 
+                                    `<button onclick="confirmPayment('${doc.id}', '${p.clientEmail}', '${p.amount}', '${p.orderTitle}')" class="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm transition-transform active:scale-95">
+                                        ${isReview ? 'Approve' : 'Mark Paid'}
+                                    </button>` : 
+                                    `<button disabled class="px-4 py-2 bg-slate-100 text-slate-400 text-xs font-bold rounded-lg cursor-not-allowed">
+                                        <i class="fas fa-check mr-1"></i> Sent
+                                    </button>`
+                                }
+                                
+                                <button onclick="promptDelete('${doc.id}', 'payments')" class="p-2 text-slate-300 hover:text-red-500 transition-colors">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+            });
+        }
+
+        // 2. Open Modal to Create New Request
+        function openPaymentRequest(oid, title, email) {
+            document.getElementById('paymentModal').classList.remove('hidden');
+            
+            // If called from Orders tab, pre-fill data
+            if(oid) {
+                document.getElementById('payOrderId').value = oid;
+                document.getElementById('payClientEmail').value = email;
+                document.getElementById('payOrderTitle').value = title;
+            } else {
+                // If called from Payments tab (Empty), clear fields
+                document.getElementById('payOrderId').value = '';
+                document.getElementById('payClientEmail').value = '';
+                document.getElementById('payOrderTitle').value = '';
+                document.getElementById('payAmount').value = '';
+            }
+        }
+
+        // 3. Submit New Payment Request
+        async function submitCreatePayment() {
+            const oid = document.getElementById('payOrderId').value;
+            const title = document.getElementById('payOrderTitle').value;
+            const email = document.getElementById('payClientEmail').value;
+            const amount = document.getElementById('payAmount').value;
+
+            // Basic Validation
+            if(!amount) return showToast("Please enter an amount", "error");
+
+            try {
+                await db.collection('payments').add({
+                    orderId: oid || null, // Can be null if generic payment
+                    orderTitle: title || "Custom Payment", 
+                    clientEmail: email || "Manual Entry", 
+                    amount: amount, 
+                    status: 'Unpaid',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                closeModal('paymentModal');
+                showToast("Payment Request Sent");
+            } catch(e) {
+                console.error(e);
+                showToast("Error creating payment", "error");
+            }
+        }
+
+        // 4. Confirm Payment & Send Invoice
+        async function confirmPayment(id, email, amount, title) {
+            if(!confirm(`Confirm receipt of $${amount} from ${email}? This will email them the invoice.`)) return;
+
+            try {
+                // A. Update DB
+                await db.collection('payments').doc(id).update({ 
+                    status: 'Paid', 
+                    confirmedAt: new Date() 
+                });
+
+                // B. Send Invoice Email
+                const invoiceHtml = `
+                    <div style="font-family:Arial;padding:30px;background:#f8f9fa;">
+                        <div style="background:white;padding:30px;border-radius:10px;max-width:500px;margin:0 auto;box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+                            <h1 style="color:#2563eb;margin:0 0 20px;">Payment Receipt</h1>
+                            <p>Thank you! Your payment has been confirmed.</p>
+                            <hr style="border:0;border-top:1px solid #eee;margin:20px 0;">
+                            <p><strong>Item:</strong> ${title}</p>
+                            <p><strong>Amount Paid:</strong> $${amount}</p>
+                            <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                            <p><strong>Status:</strong> <span style="color:green;font-weight:bold;">PAID</span></p>
+                            <hr style="border:0;border-top:1px solid #eee;margin:20px 0;">
+                            <p style="font-size:12px;color:#999;">Research Connect Accounts Team</p>
+                        </div>
+                    </div>
+                `;
+
+                // Fire and forget email
+                fetch("https://api.brevo.com/v3/smtp/email", {
+                    method: "POST",
+                    headers: { "api-key": BREVO_KEY, "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        sender: { name: "Research Connect Billing", email: "noreply.austek@gmail.com" },
+                        to: [{ email: email }],
+                        subject: `Receipt: ${title}`,
+                        htmlContent: invoiceHtml
+                    })
+                });
+
+                showToast("Payment Confirmed & Invoice Sent");
+            } catch(e) {
+                console.error(e);
+                showToast("Error confirming payment", "error");
+            }
+        }
+
+        function getSkeletonLoader() {
+            return `<div class="skeleton bg-white p-5 rounded-xl border border-slate-100 shadow-sm animate-pulse">
+                <div class="h-4 bg-slate-200 rounded w-1/3 mb-3"></div>
+                <div class="h-3 bg-slate-200 rounded w-1/2 mb-2"></div>
+                <div class="h-8 bg-slate-200 rounded w-full mt-4"></div>
+            </div>`;
+        }
+
+        // --- USER MANAGEMENT ---
+        function openUserModal(role) {
+            document.getElementById('userModal').classList.remove('hidden');
+            document.getElementById('userRole').value = role;
+            document.getElementById('userModalTitle').innerText = `Add ${role}`;
+        }
+
+        async function submitCreateUser() {
+            const name = document.getElementById('userName').value;
+            const email = document.getElementById('userEmail').value;
+            const role = document.getElementById('userRole').value;
+            const btn = document.getElementById('btnCreateUser');
+
+            if(!name || !email) return showToast("Fill all fields", "error");
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+
+            const password = Math.random().toString(36).slice(-8) + "!";
+            const username = email.split('@')[0] + Math.floor(Math.random()*99);
+
+            try {
+                const secondary = firebase.initializeApp(firebaseConfig, "Secondary"+Date.now());
+                const cred = await secondary.auth().createUserWithEmailAndPassword(email, password);
+                
+                await db.collection('users').doc(cred.user.uid).set({
+                    displayName: name, email, role, username, temp_pass: password, 
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                await secondary.delete();
+                await sendEmail(email, "Your Credentials", `Login: ${email}<br>Pass: ${password}`);
+
+                closeModal('userModal');
+                document.getElementById('userName').value = '';
+                document.getElementById('userEmail').value = '';
+                showToast("User created!");
+
+            } catch(e) { showToast(e.message, "error"); }
+            btn.innerHTML = 'Create & Send Credentials';
+        }
+
+        function loadClients() {
+            db.collection('users').where('role','==','Client').onSnapshot(snap => {
+                const c = document.getElementById('clientList'); c.innerHTML='';
+                snap.forEach(doc => c.innerHTML += renderUserCard(doc.data(), doc.id));
+            });
+        }
+        function loadAgents() {
+            db.collection('users').where('role','==','Agent').onSnapshot(snap => {
+                const c = document.getElementById('agentList'); c.innerHTML='';
+                snap.forEach(doc => c.innerHTML += renderUserCard(doc.data(), doc.id));
+            });
+        }
+
+        function renderUserCard(u, id) {
+            return `
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-all group">
+                <div class="flex justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600">${u.displayName.charAt(0)}</div>
+                        <div><h4 class="font-bold text-slate-800 text-sm">${u.displayName}</h4><p class="text-xs text-slate-500">${u.email}</p></div>
+                    </div>
+                    <button onclick="promptDelete('${id}', 'users')" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
+                </div>
+                <div class="bg-slate-50 p-2 rounded-lg text-xs font-mono text-slate-600 mb-0 flex justify-between items-center">
+                    <span class="text-slate-400">********</span>
+                    <button onclick="copyCreds('${u.email}','${u.temp_pass}')" class="text-brand-600 font-bold hover:underline">Copy Credentials</button>
+                </div>
+            </div>`;
+        }
+
+        // --- ORDER MANAGEMENT ---
+        function loadOrders() {
+            const list = document.getElementById('orderList');
+            // Initial Skeleton
+            if(list.innerHTML === '') list.innerHTML = getSkeletonLoader() + getSkeletonLoader();
+
+            db.collection('orders').orderBy('createdAt','desc').onSnapshot(snap => {
+                list.innerHTML = '';
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    list.innerHTML += `
+                    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4 items-start md:items-center justify-between transition-all hover:shadow-md">
+                        <div class="flex-1">
+                            <h4 class="font-bold text-slate-800 text-lg">${d.title}</h4>
+                            <p class="text-xs text-slate-500 mb-2">Client: ${d.clientEmail}</p>
+                            <div class="flex items-center gap-2">
+                                <span class="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-1 rounded">${d.status}</span>
+                                ${d.agentName ? `<span class="bg-green-50 text-green-600 text-[10px] font-bold px-2 py-1 rounded"><i class="fas fa-user-tie mr-1"></i>${d.agentName}</span>` : `<span class="bg-red-50 text-red-600 text-[10px] font-bold px-2 py-1 rounded">Unassigned</span>`}
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                            <button onclick="openAssignModal('${doc.id}')" class="flex-1 md:flex-none px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-lg hover:bg-slate-900">${d.agentId ? 'Re-Assign' : 'Assign'}</button>
+                            <button onclick="openPaymentRequest('${doc.id}','${d.title}','${d.clientEmail}')" class="flex-1 md:flex-none px-3 py-2 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-lg hover:bg-emerald-100">Pay Link</button>
+                            <button onclick="openFilesModal('${doc.id}')" class="flex-1 md:flex-none px-3 py-2 bg-slate-100 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-200">Files</button>
+                            <button onclick="openChat('${doc.id}','${d.clientEmail}','${d.title}')" class="px-3 py-2 bg-blue-50 text-blue-600 text-xs font-bold rounded-lg hover:bg-blue-100"><i class="fas fa-comment-alt"></i></button>
+                            <button onclick="openEditOrder('${doc.id}')" class="px-3 py-2 bg-slate-100 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-200"><i class="fas fa-edit"></i></button>
+                            <button onclick="promptDelete('${doc.id}', 'orders')" class="px-3 py-2 bg-red-50 text-red-500 text-xs font-bold rounded-lg hover:bg-red-100"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>`;
+                });
+            });
+        }
+
+        // --- ORDER CRUD ---
+        function openOrderModal() {
+            document.getElementById('orderModal').classList.remove('hidden');
+            document.getElementById('ordId').value = '';
+            document.getElementById('ordTitle').value = '';
+            document.getElementById('ordClientEmail').value = '';
+            document.getElementById('ordPrice').value = '';
+            document.getElementById('ordDate').value = '';
+            document.getElementById('ordDesc').value = '';
+        }
+
+        async function openEditOrder(id) {
+            const doc = await db.collection('orders').doc(id).get();
+            const d = doc.data();
+            openOrderModal();
+            document.getElementById('ordId').value = id;
+            document.getElementById('ordTitle').value = d.title;
+            document.getElementById('ordClientEmail').value = d.clientEmail;
+            document.getElementById('ordPrice').value = d.payment;
+            document.getElementById('ordDate').value = d.deadline;
+            document.getElementById('ordDesc').value = d.description;
+        }
+
+        async function submitSaveOrder() {
+            const id = document.getElementById('ordId').value;
+            const data = {
+                title: document.getElementById('ordTitle').value,
+                clientEmail: document.getElementById('ordClientEmail').value,
+                payment: document.getElementById('ordPrice').value,
+                deadline: document.getElementById('ordDate').value,
+                description: document.getElementById('ordDesc').value,
+            };
+
+            if(!data.title || !data.clientEmail) return showToast("Missing fields", "error");
+
+            try {
+                if(id) {
+                    await db.collection('orders').doc(id).update(data);
+                    showToast("Order Updated");
+                } else {
+                    data.status = 'Open';
+                    data.currentStep = 1;
+                    data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await db.collection('orders').add(data);
+                    showToast("Order Created");
+                }
+                closeModal('orderModal');
+            } catch(e) { showToast(e.message, "error"); }
+        }
+
+        // --- ASSIGNMENT ---
+        let assignTargetId = null;
+        function openAssignModal(id) {
+            assignTargetId = id;
+            document.getElementById('assignModal').classList.remove('hidden');
+        }
+
+        async function executeAutoAssign() {
+            const snap = await db.collection('users').where('role','==','Agent').get();
+            if(snap.empty) return showToast("No Agents available", "error");
+            
+            const agents = [];
+            snap.forEach(doc => agents.push({id: doc.id, ...doc.data()}));
+            const agent = agents[Math.floor(Math.random() * agents.length)];
+            
+            await db.collection('orders').doc(assignTargetId).update({ agentId: agent.id, agentName: agent.displayName, status: 'In Progress' });
+            closeModal('assignModal');
+            showToast(`Assigned to ${agent.displayName}`);
+        }
+
+        async function executeEmailAssign() {
+            const email = document.getElementById('assignEmail').value;
+            if(!email) return showToast("Enter email", "error");
+
+            const snap = await db.collection('users').where('email','==',email).where('role','==','Agent').limit(1).get();
+            if(snap.empty) return showToast("User is not an agent or does not exist", "error");
+
+            const doc = snap.docs[0];
+            const agent = doc.data();
+            
+            await db.collection('orders').doc(assignTargetId).update({ agentId: doc.id, agentName: agent.displayName, status: 'In Progress' });
+            closeModal('assignModal');
+            showToast(`Assigned to ${agent.displayName}`);
+        }
+
+        // --- FILES ---
+        function openFilesModal(orderId) {
+            document.getElementById('filesModal').classList.remove('hidden');
+            const container = document.getElementById('filesContainer');
+            container.innerHTML = '<p class="text-center text-gray-400">Loading...</p>';
+
+            db.collection('files').where('orderId','==',orderId).get().then(snap => {
+                container.innerHTML = '';
+                if(snap.empty) {
+                    container.innerHTML = '<p class="text-center text-gray-400 py-10">No files uploaded.</p>';
+                    return;
+                }
+                snap.forEach(doc => {
+                    const f = doc.data();
+                    container.innerHTML += `
+                    <div class="bg-slate-50 p-3 rounded-lg flex justify-between items-center">
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <i class="fas fa-file text-slate-400"></i>
+                            <div class="truncate">
+                                <p class="text-sm font-bold text-slate-700 truncate">${f.filename}</p>
+                                <p class="text-xs text-slate-400">${new Date(f.createdAt.seconds*1000).toLocaleDateString()}</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 shrink-0">
+                            <a href="${f.url}" target="_blank" class="p-2 text-blue-500 hover:bg-blue-50 rounded"><i class="fas fa-download"></i></a>
+                            <button onclick="promptDelete('${doc.id}', 'files')" class="p-2 text-red-500 hover:bg-red-50 rounded"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>`;
+                });
+            });
+        }
+
+        // --- PAYMENTS & INVOICES ---
+        function loadConfirmedPayments() {
+            db.collection('payments').onSnapshot(snap => {
+                const list = document.getElementById('paymentList'); list.innerHTML='';
+                snap.forEach(doc => {
+                    const p = doc.data();
+                    // Only show paid or review in this view? The prompt implies "Confirmed Payments"
+                    // But showing all allows management. Let's show all and highlight Confirmed.
+                    const isPaid = p.status === 'Paid';
+                    list.innerHTML += `
+                    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold text-slate-800">${p.orderTitle}</h4>
+                            <p class="text-xs text-slate-500">${p.clientEmail}</p>
+                        </div>
+                        <div class="text-right">
+                            <h2 class="text-xl font-bold text-slate-900">$${p.amount}</h2>
+                            ${isPaid ? '<span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">PAID</span>' : 
+                            `<button onclick="confirmPayment('${doc.id}','${p.clientEmail}','${p.amount}','${p.orderTitle}')" class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded font-bold shadow hover:bg-blue-700">Mark Paid</button>`}
+                            <button onclick="promptDelete('${doc.id}', 'payments')" class="ml-2 text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>`;
+                });
+            });
+        }
+
+        function openPaymentRequest(oid, title, email) {
+            document.getElementById('paymentModal').classList.remove('hidden');
+            document.getElementById('payOrderId').value = oid;
+            document.getElementById('payClientEmail').value = email;
+            document.getElementById('payOrderTitle').value = title;
+        }
+
+        async function submitCreatePayment() {
+            const oid = document.getElementById('payOrderId').value;
+            const title = document.getElementById('payOrderTitle').value;
+            const email = document.getElementById('payClientEmail').value;
+            const amount = document.getElementById('payAmount').value;
+            
+            await db.collection('payments').add({
+                orderId: oid, orderTitle: title, clientEmail: email, amount, status: 'Unpaid',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            closeModal('paymentModal');
+            showToast("Payment Request Sent");
+        }
+
+        async function confirmPayment(id, email, amount, title) {
+            if(!confirm("Confirm payment and send invoice?")) return;
+            await db.collection('payments').doc(id).update({ status: 'Paid', confirmedAt: new Date() });
+            
+            const html = `<div style="padding:20px;border:1px solid #eee;"><h1>Invoice</h1><p>Order: ${title}</p><h2>$${amount}</h2><p style="color:green">PAID</p></div>`;
+            await sendEmail(email, `Invoice: ${title}`, html);
+            showToast("Confirmed & Invoice Sent");
+        }
+
+        // --- UTILS ---
+        function promptDelete(id, col) {
+            document.getElementById('deleteModal').classList.remove('hidden');
+            document.getElementById('btnConfirmDelete').onclick = async () => {
+                await db.collection(col).doc(id).delete();
+                closeModal('deleteModal');
+                // If it was a file deletion, refresh the file list (a bit hacky for SPA, but works if we re-open)
+                if(col === 'files') {
+                    const currentFilesModal = document.getElementById('filesModal');
+                    if(!currentFilesModal.classList.contains('hidden')) {
+                        // Ideally re-fetch or remove DOM element. 
+                        // For simplicity, close modal so user re-opens to see refreshed list
+                        closeModal('filesModal');
+                    }
+                }
+                showToast("Deleted Successfully");
+            };
+        }
+
+        function copyCreds(e, p) {
+            navigator.clipboard.writeText(`Email: ${e}\nPass: ${p}`);
+            showToast("Copied to clipboard");
+        }
+
+        async function sendEmail(to, sub, html) {
+            fetch("https://api.brevo.com/v3/smtp/email", {
+                method: "POST", headers: { "api-key": BREVO_KEY, "Content-Type": "application/json" },
+                body: JSON.stringify({ sender: {name:"Research Connect", email:"noreply.austek@gmail.com"}, to:[{email:to}], subject:sub, htmlContent:html })
+            });
+        }
+
+        // --- CHAT LOGIC (Sales Side) ---
+        function openChat(id, email, title) {
+            activeChatId = id;
+            document.getElementById('chatClientName').innerText = email;
+            document.getElementById('chatOrderTitle').innerText = title;
+            
+            const panel = document.getElementById('chatPanel');
+            document.getElementById('chatModal').classList.remove('hidden');
+            setTimeout(() => {
+                panel.classList.remove('translate-y-full', 'translate-x-full');
+                panel.classList.add('translate-y-0', 'translate-x-0');
+            }, 10);
+
+            const container = document.getElementById('chatMessages');
+            container.innerHTML = '<p class="text-center text-gray-300 mt-10">Loading...</p>';
+            
+            if(chatUnsubscribe) chatUnsubscribe();
+            
+            // Sales talks in 'sales_messages' collection
+            chatUnsubscribe = db.collection('orders').doc(id).collection('sales_messages').orderBy('createdAt','asc').onSnapshot(snap => {
+                if(snap.empty && container.innerHTML.includes('Loading')) container.innerHTML = '<p class="text-center text-gray-300 mt-10">Start chatting...</p>';
+                else if(!snap.empty && container.innerHTML.includes('Loading')) container.innerHTML = '';
+
+                snap.docChanges().forEach(change => {
+                    if(change.type === 'added') {
+                        const m = change.doc.data();
+                        const isMe = m.senderRole === 'sales';
+                        container.insertAdjacentHTML('beforeend', `
+                        <div class="flex ${isMe?'justify-end':'justify-start'} mb-2 fade-in">
+                            <div class="px-4 py-2 rounded-2xl text-sm ${isMe?'bg-brand-600 text-white rounded-br-none':'bg-slate-100 text-slate-800 rounded-bl-none'} max-w-[80%]">
+                                ${m.text}
+                            </div>
+                        </div>`);
+                    }
+                });
+                container.scrollTop = container.scrollHeight;
+            });
+        }
+
+        function closeChat() {
+            const panel = document.getElementById('chatPanel');
+            panel.classList.add('translate-y-full', 'translate-x-full');
+            panel.classList.remove('translate-y-0', 'translate-x-0');
+            setTimeout(() => document.getElementById('chatModal').classList.add('hidden'), 300);
+            if(chatUnsubscribe) chatUnsubscribe();
+        }
+
+        async function sendSalesMessage() {
+            const inp = document.getElementById('chatInput');
+            if(!inp.value.trim() || !activeChatId) return;
+            await db.collection('orders').doc(activeChatId).collection('sales_messages').add({
+                text: inp.value, senderRole: 'sales', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            inp.value = '';
+        }
+    </script>
+</body>
+</html>

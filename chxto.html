@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RESEARCH CONNECT CLIENT</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+                    },
+                    colors: {
+                        ios: {
+                            blue: '#007AFF',
+                            gray: '#F2F2F7',
+                            border: '#E5E5EA',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        /* Smooth fade in for messages */
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen w-full overflow-hidden text-slate-900 select-none">
+
+    <div class="max-w-md mx-auto h-full flex flex-col bg-ios-gray relative shadow-2xl overflow-hidden sm:h-[90vh] sm:mt-[5vh] sm:rounded-3xl sm:border-[8px] sm:border-slate-800">
+        
+        <header class="flex-none h-16 bg-white/90 backdrop-blur-md border-b border-ios-border flex items-center justify-between px-4 z-20 sticky top-0">
+            <h1 class="text-xl font-bold tracking-tight text-black">Research Connect</h1>
+            <div class="flex items-center space-x-5 text-ios">
+                <button class="opacity-50 transition-opacity">
+                    <i class="fas fa-bell text-xl"></i>
+                </button>
+            </div>
+        </header>
+
+        <main class="flex-1 flex flex-col h-full bg-gray-50 relative overflow-hidden">
+            
+            <div class="px-6 py-4 bg-white border-b border-gray-200 sticky top-0 z-10">
+                <div class="bg-gray-100 p-1 rounded-xl flex font-medium relative">
+                    <div id="tab-bg" class="absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] bg-white rounded-lg shadow-sm transition-all duration-300 ease-out"></div>
+                    
+                    <button onclick="switchChatTab('agent')" class="flex-1 py-1.5 rounded-lg text-sm z-10 transition-colors duration-300 text-slate-800 font-semibold" id="tab-btn-agent">
+                        Agent Support
+                    </button>
+                    <button onclick="switchChatTab('sales')" class="flex-1 py-1.5 rounded-lg text-sm z-10 transition-colors duration-300 text-gray-500" id="tab-btn-sales">
+                        Sales Team
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 custom-scroll space-y-2">
+                <div id="chatLoader" class="text-center py-10 text-gray-400">
+                    <i class="fas fa-circle-notch fa-spin text-2xl"></i>
+                    <p class="text-xs mt-2">Syncing conversations...</p>
+                </div>
+
+                <div id="agent-list" class="space-y-3 transition-opacity duration-300"></div>
+                <div id="sales-list" class="space-y-3 hidden transition-opacity duration-300"></div>
+
+                <div id="empty-state" class="hidden flex flex-col items-center justify-center pt-20 text-gray-400">
+                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                        <i class="far fa-comments text-2xl"></i>
+                    </div>
+                    <p>No active conversations found.</p>
+                </div>
+            </div>
+        </main>
+
+        <div id="chatModal" class="fixed inset-0 z-[100] hidden" role="dialog">
+            <div onclick="closeChat()" class="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity opacity-0" id="chatBackdrop"></div>
+            
+            <div id="chatPanel" class="absolute bottom-0 w-full h-[95vh] bg-white rounded-t-[30px] shadow-2xl transform translate-y-full transition-transform duration-300 ease-out sm:max-w-md sm:mx-auto sm:left-0 sm:right-0 flex flex-col overflow-hidden">
+                
+                <div class="px-5 py-4 bg-white/90 backdrop-blur border-b border-gray-100 flex justify-between items-center z-20">
+                    <div class="flex items-center space-x-3">
+                        <button onclick="closeChat()" class="text-blue-500 pr-2">
+                            <i class="fas fa-chevron-left text-lg"></i>
+                        </button>
+                        <div class="relative">
+                            <div class="w-10 h-10 bg-gradient-to-tr from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm" id="chatHeaderAvatar">
+                                A
+                            </div>
+                            <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm leading-tight" id="chatHeaderName">Agent Name</h3>
+                            <p class="text-[10px] text-gray-400 uppercase font-bold" id="chatHeaderOrder">Order #1234</p>
+                        </div>
+                    </div>
+                    </div>
+
+                <div id="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 scroll-smooth">
+                    </div>
+
+                <div class="p-3 bg-white border-t border-gray-100 pb-8 sm:pb-3">
+                    <div class="flex items-end space-x-2 bg-gray-100 p-1.5 rounded-3xl">
+                        <textarea id="msgInput" rows="1" class="flex-1 bg-transparent border-0 focus:ring-0 text-sm max-h-24 py-2.5 px-3 resize-none placeholder-gray-400" placeholder="Type a message..."></textarea>
+                        
+                        <button onclick="sendMessage()" class="p-2 bg-blue-600 text-white rounded-full w-9 h-9 flex items-center justify-center hover:bg-blue-700 shadow-md transition-all active:scale-90 flex-none">
+                            <i class="fas fa-arrow-up text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-none bg-white/90 backdrop-blur-xl border-t border-ios-border h-[83px] w-full absolute bottom-0 z-30 pb-5">
+            <ul class="flex justify-around items-center h-full px-1">
+                <li class="flex-1 group">
+                    <button onclick="switchTab(this)" class="nav-btn w-full flex flex-col items-center justify-center space-y-1 text-gray-400 transition-colors">
+                        <i class="fas fa-house text-xl mb-0.5"></i>
+                        <span class="text-[10px] font-medium">Home</span>
+                    </button>
+                </li>
+                <li class="flex-1 group">
+                    <button onclick="switchTab(this)" class="nav-btn w-full flex flex-col items-center justify-center space-y-1 text-ios-blue hover:text-gray-500 transition-colors">
+                        <i class="fas fa-inbox text-xl mb-0.5"></i>
+                        <span class="text-[10px] font-medium">Inbox</span>
+                    </button>
+                </li>
+                <li class="flex-1 group">
+                    <button onclick="switchTab(this)" class="nav-btn w-full flex flex-col items-center justify-center space-y-1 text-gray-400 hover:text-gray-500 transition-colors">
+                        <i class="fas fa-folder text-xl mb-0.5"></i>
+                        <span class="text-[10px] font-medium">Files</span>
+                    </button>
+                </li>
+                <li class="flex-1 group">
+                    <button onclick="switchTab(this)" class="nav-btn w-full flex flex-col items-center justify-center space-y-1 text-gray-400 hover:text-gray-500 transition-colors">
+                        <i class="fas fa-inr text-xl mb-0.5"></i>
+                        <span class="text-[10px] font-medium">Payments</span>
+                    </button>
+                </li>
+                <li class="flex-1 group">
+                    <button onclick="switchTab(this)" class="nav-btn w-full flex flex-col items-center justify-center space-y-1 text-gray-400 hover:text-gray-500 transition-colors">
+                        <i class="fas fa-user text-xl mb-0.5"></i>
+                        <span class="text-[10px] font-medium">Profile</span>
+                    </button>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+
+    <script>
+        function switchTab(el) {
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-ios-blue');
+                btn.classList.add('text-gray-400');
+            });
+            el.classList.remove('text-gray-400');
+            el.classList.add('text-ios-blue');
+        }
+    </script>
+
+ 
+    <script type="text/javascript" charset="utf-8">
+  
+    // --- FIREBASE CONFIG ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyBDeDc6pWhghXmGYg9QYQ3nVAGTpo1u5AM",
+        authDomain: "research-craft.firebaseapp.com",
+        projectId: "research-craft",
+        storageBucket: "research-craft.firebasestorage.app",
+        messagingSenderId: "284823836570",
+        appId: "1:284823836570:web:fb0d93cdf92368525d8c23",
+        measurementId: "G-6H5BS98612"
+    };
+
+    // Initialize Firebase
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    
+    // --- STATE ---
+    let activeTab = 'agent';
+    let currentChatId = null;
+    let currentChatType = 'agent'; // NEW: Tracks if we are talking to Agent or Sales
+    let currentUserEmail = null;
+    let chatUnsubscribe = null;
+
+    // --- AUTH ---
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            currentUserEmail = user.email;
+            loadConversations();
+        } else {
+            document.getElementById('empty-state').classList.remove('hidden');
+            document.getElementById('chatLoader').classList.add('hidden');
+        }
+    });
+
+    // --- 1. LOAD CONVERSATION LIST ---
+    function loadConversations() {
+        if (!currentUserEmail) return;
+
+        db.collection('orders')
+          .where('clientEmail', '==', currentUserEmail)
+          .onSnapshot(snapshot => {
+              const agentList = document.getElementById('agent-list');
+              const salesList = document.getElementById('sales-list');
+              const loader = document.getElementById('chatLoader');
+              const empty = document.getElementById('empty-state');
+              
+              loader.classList.add('hidden');
+              agentList.innerHTML = '';
+              salesList.innerHTML = '';
+
+              if (snapshot.empty) {
+                  empty.classList.remove('hidden');
+                  return;
+              }
+              empty.classList.add('hidden');
+
+              snapshot.forEach(doc => {
+                  const data = doc.data();
+                  
+                  // 1. Agent Entry (Uses standard 'messages' collection logic)
+                  agentList.innerHTML += renderChatCard({
+                      id: doc.id,
+                      type: 'agent', // Identified as Agent
+                      name: data.agentName || 'Unassigned Agent',
+                      orderTitle: data.title,
+                      timestamp: data.lastAgentMsgTime || data.createdAt,
+                      unread: data.agentUnreadCount || 0,
+                      lastMsg: "Click to chat with Support"
+                  });
+
+                  // 2. Sales Entry (Uses 'sales_messages' collection logic)
+                  salesList.innerHTML += renderChatCard({
+                      id: doc.id,
+                      type: 'sales', // Identified as Sales
+                      name: data.salesName || 'Sales Team',
+                      orderTitle: data.title,
+                      timestamp: data.lastSalesMsgTime || data.createdAt,
+                      unread: data.salesUnreadCount || 0,
+                      lastMsg: "Click to chat with Sales"
+                  });
+              });
+          });
+    }
+
+    // --- 2. RENDER CARD HTML ---
+    function renderChatCard(chat) {
+        const date = chat.timestamp ? new Date(chat.timestamp.seconds * 1000) : new Date();
+        const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        const badgeCount = chat.unread > 9 ? '9+' : chat.unread;
+        const badgeHTML = chat.unread > 0 
+            ? `<div class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white shadow-sm">${badgeCount}</div>` 
+            : '';
+        
+        const titleClass = chat.unread > 0 ? 'font-bold text-slate-900' : 'font-medium text-slate-700';
+        const msgClass = chat.unread > 0 ? 'font-semibold text-slate-800' : 'text-gray-500';
+        // Different colors for Agent (Blue) vs Sales (Green/Teal)
+        const iconColor = chat.type === 'agent' ? 'from-blue-500 to-indigo-600' : 'from-emerald-500 to-teal-600';
+        const initial = chat.name.charAt(0);
+
+        return `
+        <div onclick="openChat('${chat.id}', '${chat.type}', '${chat.name}', '${chat.orderTitle}')" class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm active:scale-[0.98] transition-transform flex items-center space-x-4 cursor-pointer">
+            <div class="relative">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br ${iconColor} flex items-center justify-center text-white text-lg font-bold shadow-sm">
+                    ${initial}
+                </div>
+                ${badgeHTML}
+            </div>
+
+            <div class="flex-1 min-w-0">
+                <div class="flex justify-between items-baseline mb-0.5">
+                    <h4 class="${titleClass} text-sm truncate pr-2">${chat.name}</h4>
+                    <span class="text-[10px] text-gray-400 font-medium whitespace-nowrap">${timeStr}</span>
+                </div>
+                <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-0.5 truncate">
+                    ${chat.orderTitle}
+                </div>
+                <p class="${msgClass} text-xs truncate">
+                    ${chat.lastMsg}
+                </p>
+            </div>
+        </div>
+        `;
+    }
+
+    // --- 3. TAB SWITCHING ---
+    function switchChatTab(tab) {
+        activeTab = tab;
+        const bg = document.getElementById('tab-bg');
+        const agentBtn = document.getElementById('tab-btn-agent');
+        const salesBtn = document.getElementById('tab-btn-sales');
+        const agentList = document.getElementById('agent-list');
+        const salesList = document.getElementById('sales-list');
+
+        if (tab === 'agent') {
+            bg.style.transform = 'translateX(0)';
+            agentBtn.classList.replace('text-gray-500', 'text-slate-800');
+            agentBtn.classList.add('font-semibold');
+            salesBtn.classList.replace('text-slate-800', 'text-gray-500');
+            salesBtn.classList.remove('font-semibold');
+            
+            agentList.classList.remove('hidden');
+            salesList.classList.add('hidden');
+        } else {
+            bg.style.transform = 'translateX(100%)';
+            salesBtn.classList.replace('text-gray-500', 'text-slate-800');
+            salesBtn.classList.add('font-semibold');
+            agentBtn.classList.replace('text-slate-800', 'text-gray-500');
+            agentBtn.classList.remove('font-semibold');
+
+            salesList.classList.remove('hidden');
+            agentList.classList.add('hidden');
+        }
+    }
+
+    // --- 4. OPEN CHAT (REAL-TIME) ---
+    function openChat(orderId, type, name, title) {
+        currentChatId = orderId;
+        currentChatType = type; // Store the type (agent or sales)
+        
+        // UI Updates
+        document.getElementById('chatHeaderName').innerText = name;
+        document.getElementById('chatHeaderOrder').innerText = title;
+        document.getElementById('chatHeaderAvatar').innerText = name.charAt(0);
+        
+        // Update Avatar Color based on type
+        const avatar = document.getElementById('chatHeaderAvatar');
+        if(type === 'sales') {
+            avatar.className = "w-10 h-10 bg-gradient-to-tr from-emerald-500 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm";
+        } else {
+            avatar.className = "w-10 h-10 bg-gradient-to-tr from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm";
+        }
+
+        const container = document.getElementById('messagesContainer');
+        container.innerHTML = `<div class="text-center text-gray-400 mt-10 text-xs">Loading ${type} messages...</div>`;
+
+        // Open Modal UI
+        const modal = document.getElementById('chatModal');
+        const panel = document.getElementById('chatPanel');
+        const backdrop = document.getElementById('chatBackdrop');
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            backdrop.classList.remove('opacity-0');
+            panel.classList.remove('translate-y-full');
+        }, 10);
+
+        // STOP previous listener if exists
+        if (chatUnsubscribe) {
+            chatUnsubscribe();
+        }
+
+        // --- DETERMINE COLLECTION PATH ---
+        // If type is 'agent', use default 'messages' (compatible with agent panel)
+        // If type is 'sales', use 'sales_messages' (separate channel)
+        const collectionName = (type === 'sales') ? 'sales_messages' : 'messages';
+
+        // START Real-time Listener
+        chatUnsubscribe = db.collection('orders')
+            .doc(orderId)
+            .collection(collectionName) // <--- Dynamic Collection
+            .orderBy('createdAt', 'asc')
+            .onSnapshot(snapshot => {
+                container.innerHTML = ''; 
+                
+                if(snapshot.empty) {
+                    container.innerHTML = '<div class="text-center text-gray-300 mt-10 text-xs">Start the conversation!</div>';
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    const msg = doc.data();
+                    const isMe = msg.senderRole === 'client'; 
+                    container.innerHTML += renderMessage(msg, isMe);
+                });
+
+                // Scroll to bottom
+                container.scrollTop = container.scrollHeight;
+            });
+    }
+
+    function renderMessage(msg, isMe) {
+        const time = msg.createdAt 
+            ? new Date(msg.createdAt.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+            : '...';
+
+        if (isMe) {
+            // MY MESSAGE (Right, Blue)
+            return `
+            <div class="flex items-end justify-end mb-4 animate-fade-in">
+                <span class="text-[9px] text-gray-400 mr-2 mb-1">${time}</span>
+                <div class="bg-blue-600 rounded-2xl rounded-br-none px-4 py-3 shadow-sm max-w-[75%]">
+                    <p class="text-sm text-white">${msg.text}</p>
+                </div>
+            </div>`;
+        } else {
+            // THEIR MESSAGE (Left, White)
+            return `
+            <div class="flex items-end mb-4 animate-fade-in">
+                <div class="bg-white border border-gray-100 rounded-2xl rounded-bl-none px-4 py-3 shadow-sm max-w-[75%]">
+                    <p class="text-sm text-gray-800">${msg.text}</p>
+                </div>
+                <span class="text-[9px] text-gray-400 ml-2 mb-1">${time}</span>
+            </div>`;
+        }
+    }
+
+    // --- 5. SEND MESSAGE (REAL DB WRITE) ---
+    async function sendMessage() {
+        const input = document.getElementById('msgInput');
+        const text = input.value.trim();
+        if (!text || !currentChatId) return;
+
+        input.value = ''; // Clear input immediately
+
+        // Determine Collection based on current active type
+        const collectionName = (currentChatType === 'sales') ? 'sales_messages' : 'messages';
+
+        try {
+            await db.collection('orders').doc(currentChatId).collection(collectionName).add({
+                text: text,
+                senderId: auth.currentUser ? auth.currentUser.uid : 'anonymous',
+                senderRole: 'client',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch (error) {
+            console.error("Error sending message:", error);
+            alert("Failed to send message.");
+        }
+    }
+
+    // --- 6. CLOSE CHAT & CLEANUP ---
+    function closeChat() {
+        const modal = document.getElementById('chatModal');
+        const panel = document.getElementById('chatPanel');
+        const backdrop = document.getElementById('chatBackdrop');
+
+        // Detach listener
+        if (chatUnsubscribe) {
+            chatUnsubscribe();
+            chatUnsubscribe = null;
+        }
+
+        backdrop.classList.add('opacity-0');
+        panel.classList.add('translate-y-full');
+
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            currentChatId = null;
+        }, 300);
+    }
+</script>
+
+</body>
+</html>

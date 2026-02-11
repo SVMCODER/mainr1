@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Connect | Super Admin</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 800: '#1e40af', 900: '#1e3a8a' },
+                        dark: { 800: '#1e293b', 900: '#0f172a' }
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        
+        .fade-in { animation: fadeIn 0.2s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .custom-select-options { display: none; transform-origin: top; }
+        .custom-select.active .custom-select-options { display: block; animation: scaleIn 0.1s ease-out; }
+        @keyframes scaleIn { from { transform: scaleY(0.9); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
+
+        .modal-backdrop { background-color: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px); }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 h-screen flex overflow-hidden">
+
+    <aside class="hidden md:flex flex-col w-72 bg-dark-900 text-white h-full z-30 shadow-2xl flex-shrink-0 transition-all">
+        <div class="p-6 border-b border-white/5 flex items-center gap-3">
+            <div class="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg shadow-brand-600/20">R</div>
+            <div>
+                <h1 class="font-bold text-lg tracking-tight">Research<br><span class="text-brand-500">Connect</span></h1>
+            </div>
+        </div>
+        
+        <div class="p-4 overflow-y-auto custom-scroll flex-1">
+            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 pl-2">Overview</p>
+            <nav class="space-y-1">
+                <button onclick="switchTab('dashboard')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition text-white bg-white/5" id="nav-dashboard">
+                    <i class="fas fa-chart-line w-5"></i> <span>Analytics</span>
+                </button>
+            </nav>
+
+            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 mt-6 pl-2">Management</p>
+            <nav class="space-y-1">
+                <button onclick="switchTab('orders')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition text-slate-300 hover:text-white" id="nav-orders">
+                    <i class="fas fa-clipboard-list w-5"></i> <span>Order Manager</span>
+                </button>
+                <button onclick="switchTab('users')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition text-slate-300 hover:text-white" id="nav-users">
+                    <i class="fas fa-users-cog w-5"></i> <span>User Manager</span>
+                </button>
+                <button onclick="switchTab('files')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition text-slate-300 hover:text-white" id="nav-files">
+                    <i class="fas fa-hdd w-5"></i> <span>File System</span>
+                </button>
+            </nav>
+
+            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 mt-6 pl-2">Security</p>
+            <nav class="space-y-1">
+                <button onclick="switchTab('logs')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition text-slate-300 hover:text-white" id="nav-logs">
+                    <i class="fas fa-shield-alt w-5"></i> <span>Audit Logs</span>
+                </button>
+            </nav>
+        </div>
+
+        <div class="mt-auto p-4 border-t border-white/5 bg-dark-800">
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-500 to-purple-500 flex items-center justify-center font-bold">SA</div>
+                    <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-dark-800 rounded-full"></div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold text-white truncate">Super Admin</p>
+                    <button onclick="auth.signOut()" class="text-xs text-slate-400 hover:text-red-400">Sign Out</button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full relative overflow-hidden bg-slate-50">
+        
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-20 shadow-sm">
+            <div class="flex items-center gap-4">
+                <button class="md:hidden text-slate-600"><i class="fas fa-bars text-xl"></i></button>
+                <h2 class="text-lg font-bold text-slate-800" id="headerTitle">Dashboard Overview</h2>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="hidden md:flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full text-xs font-medium text-slate-600">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    <span>System Online</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-6 md:p-8 custom-scroll relative">
+
+            <div id="view-dashboard" class="view-section fade-in space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="flex justify-between items-start mb-4">
+                            <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Revenue</p><h3 class="text-3xl font-bold text-slate-900 mt-1" id="kpiRevenue">$0</h3></div>
+                            <div class="p-2 bg-green-50 text-green-600 rounded-lg"><i class="fas fa-dollar-sign"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="flex justify-between items-start mb-4">
+                            <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Storage Used</p><h3 class="text-3xl font-bold text-slate-900 mt-1" id="kpiStorage">0 MB</h3></div>
+                            <div class="p-2 bg-purple-50 text-purple-600 rounded-lg"><i class="fas fa-hdd"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="flex justify-between items-start mb-4">
+                            <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Orders</p><h3 class="text-3xl font-bold text-slate-900 mt-1" id="kpiOrders">0</h3></div>
+                            <div class="p-2 bg-blue-50 text-blue-600 rounded-lg"><i class="fas fa-box-open"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="flex justify-between items-start mb-4">
+                            <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Unassigned</p><h3 class="text-3xl font-bold text-slate-900 mt-1" id="kpiUnassigned">0</h3></div>
+                            <div class="p-2 bg-red-50 text-red-600 rounded-lg"><i class="fas fa-exclamation-triangle"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-slate-100"><h3 class="font-bold text-slate-800">Recent System Activity</h3></div>
+                    <div id="dashboardLogs" class="divide-y divide-slate-50"></div>
+                </div>
+            </div>
+
+            <div id="view-orders" class="view-section hidden fade-in space-y-6">
+                <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <div class="flex gap-4 items-center flex-1">
+                        <div class="relative w-64">
+                            <i class="fas fa-search absolute left-3 top-3 text-slate-400 text-xs"></i>
+                            <input type="text" onkeyup="filterTable('ordersTable', 1, this.value)" placeholder="Search Orders..." class="pl-9 w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-500">
+                        </div>
+                        <div class="relative custom-select w-48" id="filterStatus">
+                            <button onclick="toggleSelect('filterStatus')" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm flex justify-between items-center text-slate-600"><span class="selected-text">All Status</span> <i class="fas fa-chevron-down text-xs"></i></button>
+                            <div class="custom-select-options absolute w-full bg-white border border-slate-200 rounded-xl mt-1 shadow-xl z-20">
+                                <div onclick="filterOrdersByStatus('All')" class="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm">All</div>
+                                <div onclick="filterOrdersByStatus('Open')" class="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm">Open</div>
+                                <div onclick="filterOrdersByStatus('In Progress')" class="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm">In Progress</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm" id="ordersTable">
+                            <thead class="bg-slate-50 text-slate-500 font-bold text-xs uppercase">
+                                <tr>
+                                    <th class="p-4 pl-6">ID</th>
+                                    <th class="p-4">Title & Client</th>
+                                    <th class="p-4">Agent</th>
+                                    <th class="p-4">Status</th>
+                                    <th class="p-4">Payment</th>
+                                    <th class="p-4 text-right pr-6">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100" id="ordersBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-users" class="view-section hidden fade-in space-y-6">
+                <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <div class="relative w-64">
+                        <i class="fas fa-search absolute left-3 top-3 text-slate-400 text-xs"></i>
+                        <input type="text" onkeyup="filterTable('usersTable', 1, this.value)" placeholder="Search Users..." class="pl-9 w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none">
+                    </div>
+                    <button onclick="openUserModal()" class="bg-brand-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg hover:bg-brand-700 flex items-center gap-2"><i class="fas fa-plus"></i> Add User</button>
+                </div>
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <table class="w-full text-left text-sm" id="usersTable">
+                        <thead class="bg-slate-50 text-slate-500 font-bold text-xs uppercase"><tr><th class="p-4 pl-6">User</th><th class="p-4">Role</th><th class="p-4">Status</th><th class="p-4 text-right pr-6">Actions</th></tr></thead>
+                        <tbody class="divide-y divide-slate-100" id="usersBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="view-files" class="view-section hidden fade-in space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <p class="text-xs text-slate-400 uppercase font-bold">Total Files</p>
+                        <h3 class="text-2xl font-bold text-slate-800" id="fileCount">0</h3>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <p class="text-xs text-slate-400 uppercase font-bold">Est. Storage</p>
+                        <h3 class="text-2xl font-bold text-brand-600" id="fileSize">0 MB</h3>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                    <h3 class="font-bold text-lg mb-4">All Uploaded Assets</h3>
+                    <div id="fileGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+                </div>
+            </div>
+
+            <div id="view-logs" class="view-section hidden fade-in">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-slate-100"><h3 class="font-bold">Full Audit Trail</h3></div>
+                    <div class="divide-y divide-slate-50" id="logsBody"></div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="userModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 modal-backdrop" onclick="closeModal('userModal')"></div>
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl relative z-10 fade-in p-6">
+            <h3 class="text-xl font-bold mb-4">Manage User</h3>
+            <input type="hidden" id="crudUserId">
+            <div class="space-y-4">
+                <input type="text" id="crudName" placeholder="Full Name" class="w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm">
+                <input type="email" id="crudEmail" placeholder="Email" class="w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm">
+                <div class="relative custom-select" id="crudRoleSelect">
+                    <button onclick="toggleSelect('crudRoleSelect')" class="w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm flex justify-between"><span class="selected-text" id="crudRoleText">Client</span><i class="fas fa-chevron-down"></i></button>
+                    <div class="custom-select-options absolute w-full bg-white border rounded-xl mt-1 shadow-xl z-20">
+                        <div onclick="setCrudRole('Client')" class="px-4 py-2 hover:bg-slate-50 cursor-pointer">Client</div>
+                        <div onclick="setCrudRole('Agent')" class="px-4 py-2 hover:bg-slate-50 cursor-pointer">Agent</div>
+                        <div onclick="setCrudRole('Admin')" class="px-4 py-2 hover:bg-slate-50 cursor-pointer">Admin</div>
+                    </div>
+                </div>
+                <button onclick="submitUserCrud()" class="w-full bg-brand-600 text-white font-bold py-3 rounded-xl hover:bg-brand-700">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="orderModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 modal-backdrop" onclick="closeModal('orderModal')"></div>
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl relative z-10 fade-in p-6 max-h-[90vh] overflow-y-auto">
+            <h3 class="text-xl font-bold mb-4">Edit Order</h3>
+            <input type="hidden" id="editOrdId">
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-slate-400">Payment ($)</label>
+                        <input type="number" id="editPayment" class="w-full bg-slate-50 border rounded-xl px-4 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-400">Deadline</label>
+                        <div class="relative"><input type="date" id="editDate" class="w-full bg-slate-50 border rounded-xl px-4 py-2 text-sm text-slate-600"></div>
+                    </div>
+                </div>
+                
+                <div class="relative custom-select" id="editStatusSelect">
+                    <label class="text-xs font-bold text-slate-400">Status</label>
+                    <button onclick="toggleSelect('editStatusSelect')" class="w-full bg-slate-50 border rounded-xl px-4 py-2 text-sm flex justify-between"><span class="selected-text" id="editStatusText">Open</span><i class="fas fa-chevron-down"></i></button>
+                    <div class="custom-select-options absolute w-full bg-white border rounded-xl mt-1 shadow-xl z-20">
+                        <div onclick="setEditStatus('Open')" class="px-4 py-2 hover:bg-slate-50 cursor-pointer text-sm">Open</div>
+                        <div onclick="setEditStatus('In Progress')" class="px-4 py-2 hover:bg-slate-50 cursor-pointer text-sm">In Progress</div>
+                        <div onclick="setEditStatus('Finished')" class="px-4 py-2 hover:bg-slate-50 cursor-pointer text-sm">Finished</div>
+                    </div>
+                </div>
+
+                <div class="relative custom-select" id="editAgentSelect">
+                    <label class="text-xs font-bold text-slate-400">Assigned Agent</label>
+                    <button onclick="toggleSelect('editAgentSelect')" class="w-full bg-slate-50 border rounded-xl px-4 py-2 text-sm flex justify-between"><span class="selected-text" id="editAgentText">Unassigned</span><i class="fas fa-user-tie"></i></button>
+                    <div id="agentOptionsContainer" class="custom-select-options absolute w-full bg-white border rounded-xl mt-1 shadow-xl z-20 max-h-40 overflow-y-auto"></div>
+                    <input type="hidden" id="editAgentId"><input type="hidden" id="editAgentName">
+                </div>
+
+                <button onclick="submitOrderEdit()" class="w-full bg-brand-600 text-white font-bold py-3 rounded-xl hover:bg-brand-700">Update Order</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="chatModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 modal-backdrop" onclick="closeModal('chatModal')"></div>
+        <div class="bg-white w-full max-w-2xl h-[600px] rounded-2xl shadow-2xl relative z-10 fade-in flex flex-col">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
+                <div class="flex gap-4">
+                    <button onclick="switchChatView('agent')" id="btnChatAgent" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-brand-600 text-white">Support Chat</button>
+                    <button onclick="switchChatView('sales')" id="btnChatSales" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-600">Sales Chat</button>
+                </div>
+                <button onclick="closeModal('chatModal')" class="text-slate-400"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div id="chatViewerBody" class="flex-1 overflow-y-auto p-6 space-y-3 bg-white custom-scroll"></div>
+            <input type="hidden" id="viewChatOrderId">
+        </div>
+    </div>
+
+    <div id="confirmModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 modal-backdrop"></div>
+        <div class="bg-white rounded-2xl shadow-2xl p-6 relative z-10 w-full max-w-sm text-center">
+            <div class="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-xl"><i class="fas fa-trash-alt"></i></div>
+            <h3 class="text-lg font-bold">Confirm Deletion</h3>
+            <p class="text-sm text-slate-500 mb-6">This cannot be undone.</p>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="closeModal('confirmModal')" class="py-2 bg-slate-100 rounded-xl font-bold text-slate-600">Cancel</button>
+                <button id="btnConfirmAction" class="py-2 bg-red-600 text-white rounded-xl font-bold">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-5 right-5 z-[100] transform translate-y-[150%] transition-transform duration-300">
+        <div class="bg-dark-800 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-slate-700">
+            <div id="toastIcon" class="w-2 h-2 rounded-full bg-green-400"></div><span id="toastMsg" class="text-sm font-medium">Success</span>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIG ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBDeDc6pWhghXmGYg9QYQ3nVAGTpo1u5AM",
+            authDomain: "research-craft.firebaseapp.com",
+            projectId: "research-craft",
+            storageBucket: "research-craft.firebasestorage.app",
+            messagingSenderId: "284823836570",
+            appId: "1:284823836570:web:fb0d93cdf92368525d8c23",
+            measurementId: "G-6H5BS98612"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        let currentUser = null;
+        let confirmCallback = null;
+        let chatUnsubscribe = null;
+
+        // --- AUTH & INIT ---
+        auth.onAuthStateChanged(user => {
+            if (user) { currentUser = user; initDashboard(); }
+            else console.log("Logged Out");
+        });
+
+        function initDashboard() {
+            loadStats(); loadUsers(); loadOrders(); loadFiles(); loadLogs();
+            switchTab('dashboard');
+        }
+
+        // --- UI UTILS ---
+        function switchTab(id) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${id}`).classList.remove('hidden');
+            document.querySelectorAll('.nav-item').forEach(el => { el.classList.remove('bg-white/5','text-white'); el.classList.add('text-slate-300'); });
+            const btn = document.getElementById(`nav-${id}`);
+            if(btn) { btn.classList.add('bg-white/5','text-white'); btn.classList.remove('text-slate-300'); }
+            // Update title
+            const titles = {dashboard:"Overview", orders:"Order Management", users:"User Management", files:"File System", logs:"Audit Logs"};
+            document.getElementById('headerTitle').innerText = titles[id] || "Dashboard";
+        }
+
+        function toggleSelect(id) { document.getElementById(id).classList.toggle('active'); }
+        window.onclick = e => { if (!e.target.closest('.custom-select')) document.querySelectorAll('.custom-select').forEach(el => el.classList.remove('active')); }
+        
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        
+        function openConfirm(cb) { confirmCallback = cb; openModal('confirmModal'); }
+        document.getElementById('btnConfirmAction').onclick = () => { if(confirmCallback) confirmCallback(); closeModal('confirmModal'); };
+
+        function showToast(msg, type='s') {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            document.getElementById('toastIcon').className = type==='e'?'w-2 h-2 rounded-full bg-red-500':'w-2 h-2 rounded-full bg-green-400';
+            t.classList.remove('translate-y-[150%]'); setTimeout(() => t.classList.add('translate-y-[150%]'), 3000);
+        }
+
+        function filterTable(tid, col, q) {
+            const rows = document.getElementById(tid).getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+            for(let r of rows) {
+                const txt = r.innerText.toLowerCase();
+                r.style.display = txt.includes(q.toLowerCase()) ? '' : 'none';
+            }
+        }
+
+        async function logAction(act, det) {
+            await db.collection('audit_logs').add({ action:act, details:det, admin:currentUser.email, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+        }
+
+        // --- 1. STATS ---
+        function loadStats() {
+            // Stats logic
+            db.collection('orders').where('status','==','Open').onSnapshot(s => document.getElementById('kpiOrders').innerText = s.size);
+            db.collection('orders').where('agentId','==',null).onSnapshot(s => document.getElementById('kpiUnassigned').innerText = s.size);
+            db.collection('payments').where('status','==','Paid').onSnapshot(s => {
+                let t = 0; s.forEach(d => t += parseFloat(d.data().amount||0));
+                document.getElementById('kpiRevenue').innerText = `$${t.toLocaleString()}`;
+            });
+            // Calculate Storage
+            db.collection('files').onSnapshot(s => {
+                // Mock size: Assume 2MB per file average if size not stored
+                const mb = (s.size * 2).toFixed(1);
+                document.getElementById('kpiStorage').innerText = `${mb} MB`;
+            });
+        }
+
+        // --- 2. USERS ---
+        function loadUsers() {
+            const b = document.getElementById('usersBody');
+            db.collection('users').orderBy('createdAt','desc').onSnapshot(s => {
+                b.innerHTML = '';
+                s.forEach(d => {
+                    const u = d.data();
+                    const color = u.role==='Admin'?'bg-purple-100 text-purple-700':(u.role==='Agent'?'bg-blue-100 text-blue-700':'bg-green-100 text-green-700');
+                    b.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                        <td class="p-4 pl-6"><p class="font-bold text-slate-800">${u.displayName}</p><p class="text-xs text-slate-500">${u.email}</p></td>
+                        <td class="p-4"><span class="text-[10px] font-bold px-2 py-1 rounded uppercase ${color}">${u.role}</span></td>
+                        <td class="p-4 text-xs"><span class="w-2 h-2 rounded-full bg-green-500 inline-block mr-1"></span> Active</td>
+                        <td class="p-4 text-right pr-6">
+                            <button onclick="editUser('${d.id}')" class="text-slate-400 hover:text-brand-600 mr-2"><i class="fas fa-edit"></i></button>
+                            <button onclick="deleteUser('${d.id}','${u.email}')" class="text-slate-400 hover:text-red-500"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>`;
+                });
+            });
+        }
+        
+        function setCrudRole(r) { document.getElementById('crudRoleText').innerText = r; toggleSelect('crudRoleSelect'); }
+        function openUserModal() { document.getElementById('crudUserId').value=''; document.getElementById('crudName').value=''; document.getElementById('crudEmail').value=''; openModal('userModal'); }
+        async function editUser(id) {
+            const d = await db.collection('users').doc(id).get(); const u=d.data();
+            openModal('userModal'); document.getElementById('crudUserId').value=id; document.getElementById('crudName').value=u.displayName; document.getElementById('crudEmail').value=u.email;
+            document.getElementById('crudRoleText').innerText=u.role;
+        }
+        async function submitUserCrud() {
+            const id = document.getElementById('crudUserId').value;
+            const data = { displayName: document.getElementById('crudName').value, email: document.getElementById('crudEmail').value, role: document.getElementById('crudRoleText').innerText };
+            if(id) await db.collection('users').doc(id).update(data);
+            else { await db.collection('users').add({...data, createdAt: firebase.firestore.FieldValue.serverTimestamp()}); } // Auth needs secondary app
+            closeModal('userModal'); showToast("User Saved"); logAction("User Save", data.email);
+        }
+        function deleteUser(id, e) { openConfirm(async()=>{ await db.collection('users').doc(id).delete(); showToast("Deleted"); logAction("Delete User", e); }); }
+
+        // --- 3. ORDERS ---
+        function loadOrders() {
+            const b = document.getElementById('ordersBody');
+            db.collection('orders').orderBy('createdAt','desc').onSnapshot(s => {
+                b.innerHTML = '';
+                s.forEach(d => {
+                    const o = d.data();
+                    b.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                        <td class="p-4 pl-6 text-xs font-mono text-slate-500">#${d.id.substr(0,6)}</td>
+                        <td class="p-4"><p class="font-bold text-slate-800">${o.title}</p><p class="text-xs text-slate-500">${o.clientEmail}</p></td>
+                        <td class="p-4 text-xs font-bold ${o.agentName?'text-brand-600':'text-red-500'}">${o.agentName || 'Unassigned'}</td>
+                        <td class="p-4"><span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-bold">${o.status}</span></td>
+                        <td class="p-4 font-bold text-slate-700">$${o.payment}</td>
+                        <td class="p-4 text-right pr-6 flex justify-end gap-2">
+                            <button onclick="openChatViewer('${d.id}')" class="p-2 text-blue-500 hover:bg-blue-50 rounded"><i class="fas fa-comment-alt"></i></button>
+                            <button onclick="openOrderEdit('${d.id}')" class="p-2 text-slate-500 hover:bg-slate-100 rounded"><i class="fas fa-edit"></i></button>
+                            <button onclick="deleteOrder('${d.id}')" class="p-2 text-red-400 hover:bg-red-50 rounded"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>`;
+                });
+            });
+        }
+
+        // --- 4. ORDER EDIT ---
+        async function openOrderEdit(id) {
+            const d = await db.collection('orders').doc(id).get(); const o=d.data();
+            openModal('orderModal');
+            document.getElementById('editOrdId').value = id;
+            document.getElementById('editPayment').value = o.payment;
+            document.getElementById('editDate').value = o.deadline;
+            document.getElementById('editStatusText').innerText = o.status;
+            document.getElementById('editAgentText').innerText = o.agentName || 'Unassigned';
+            
+            // Populate Agent Dropdown
+            const list = document.getElementById('agentOptionsContainer');
+            db.collection('users').where('role','==','Agent').get().then(snap=>{
+                list.innerHTML='';
+                snap.forEach(a=>{
+                    const ad=a.data();
+                    list.innerHTML += `<div onclick="selectAgent('${a.id}','${ad.displayName}')" class="px-4 py-2 hover:bg-slate-50 cursor-pointer text-sm">${ad.displayName}</div>`;
+                });
+            });
+        }
+        function setEditStatus(s) { document.getElementById('editStatusText').innerText=s; toggleSelect('editStatusSelect'); }
+        function selectAgent(id,name) { document.getElementById('editAgentId').value=id; document.getElementById('editAgentName').value=name; document.getElementById('editAgentText').innerText=name; toggleSelect('editAgentSelect'); }
+        
+        async function submitOrderEdit() {
+            const id = document.getElementById('editOrdId').value;
+            const up = {
+                payment: document.getElementById('editPayment').value,
+                deadline: document.getElementById('editDate').value,
+                status: document.getElementById('editStatusText').innerText,
+            };
+            const aid = document.getElementById('editAgentId').value;
+            if(aid) { up.agentId=aid; up.agentName=document.getElementById('editAgentName').value; }
+            
+            await db.collection('orders').doc(id).update(up);
+            closeModal('orderModal'); showToast("Order Updated"); logAction("Update Order", id);
+        }
+        function deleteOrder(id) { openConfirm(async()=>{ await db.collection('orders').doc(id).delete(); showToast("Deleted"); logAction("Delete Order", id); }); }
+
+        // --- 5. CHAT VIEWER ---
+        function openChatViewer(id) {
+            document.getElementById('viewChatOrderId').value = id;
+            openModal('chatModal');
+            switchChatView('agent'); // Default
+        }
+        function switchChatView(type) {
+            const id = document.getElementById('viewChatOrderId').value;
+            const col = type === 'sales' ? 'sales_messages' : 'messages';
+            
+            // Toggle Buttons
+            document.getElementById('btnChatAgent').className = type==='agent' ? "px-4 py-1.5 rounded-lg text-xs font-bold bg-brand-600 text-white" : "px-4 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-600";
+            document.getElementById('btnChatSales').className = type==='sales' ? "px-4 py-1.5 rounded-lg text-xs font-bold bg-brand-600 text-white" : "px-4 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-600";
+
+            if(chatUnsubscribe) chatUnsubscribe();
+            const container = document.getElementById('chatViewerBody');
+            container.innerHTML = '<p class="text-center text-slate-400">Loading...</p>';
+
+            chatUnsubscribe = db.collection('orders').doc(id).collection(col).orderBy('createdAt','asc').onSnapshot(snap => {
+                container.innerHTML = '';
+                if(snap.empty) { container.innerHTML='<p class="text-center text-slate-400 mt-10">No messages found.</p>'; return; }
+                
+                snap.forEach(doc => {
+                    const m = doc.data();
+                    const isClient = m.senderRole === 'client';
+                    const align = isClient ? 'justify-start' : 'justify-end';
+                    const color = isClient ? 'bg-slate-100 text-slate-800' : 'bg-brand-50 text-brand-800';
+                    const sender = isClient ? 'Client' : (type==='sales'?'Sales Team':'Agent');
+                    
+                    container.innerHTML += `
+                    <div class="flex ${align} mb-2">
+                        <div class="max-w-[80%]">
+                            <p class="text-[10px] text-slate-400 mb-0.5 ${isClient?'text-left':'text-right'}">${sender}</p>
+                            <div class="px-4 py-2 rounded-2xl text-sm ${color}">${m.text}</div>
+                        </div>
+                    </div>`;
+                });
+                container.scrollTop = container.scrollHeight;
+            });
+        }
+
+        // --- 6. FILES ---
+        function loadFiles() {
+            const g = document.getElementById('fileGrid');
+            db.collection('files').orderBy('createdAt','desc').limit(50).onSnapshot(s => {
+                g.innerHTML = '';
+                s.forEach(doc => {
+                    const f = doc.data();
+                    g.innerHTML += `
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center group">
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <div class="w-10 h-10 bg-slate-100 rounded flex items-center justify-center text-slate-500"><i class="fas fa-file"></i></div>
+                            <div>
+                                <p class="font-bold text-sm text-slate-700 truncate w-32">${f.filename}</p>
+                                <p class="text-[10px] text-slate-400">${f.orderTitle || 'Unknown'}</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <a href="${f.url}" target="_blank" class="p-2 text-brand-600 bg-brand-50 rounded hover:bg-brand-100"><i class="fas fa-download"></i></a>
+                            <button onclick="deleteFile('${doc.id}')" class="p-2 text-red-500 bg-red-50 rounded hover:bg-red-100"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>`;
+                });
+            });
+        }
+        function deleteFile(id) { openConfirm(async()=>{ await db.collection('files').doc(id).delete(); showToast("File Deleted"); logAction("Delete File", id); }); }
+
+        // --- 7. LOGS ---
+        function loadLogs() {
+            const l = document.getElementById('logsBody'); const d = document.getElementById('dashboardLogs');
+            db.collection('audit_logs').orderBy('timestamp','desc').limit(20).onSnapshot(s => {
+                let h = '';
+                s.forEach(doc => {
+                    const log = doc.data();
+                    const t = log.timestamp ? new Date(log.timestamp.seconds*1000).toLocaleString() : '';
+                    h += `<div class="p-4 flex gap-3 hover:bg-slate-50 border-b border-slate-50">
+                        <div class="mt-1 text-slate-400"><i class="fas fa-info-circle"></i></div>
+                        <div><p class="text-sm font-bold text-slate-800">${log.action}</p><p class="text-xs text-slate-500">${log.details}</p><p class="text-[10px] text-slate-400 mt-1">${t} • ${log.admin}</p></div>
+                    </div>`;
+                });
+                if(l) l.innerHTML = h; if(d) d.innerHTML = h;
+            });
+        }
+    </script>
+</body>
+</html>

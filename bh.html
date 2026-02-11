@@ -1,0 +1,1720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Research Craft | Client Portal</title>
+    
+    <!-- Tailwind CSS Production Build -->
+    <script>
+        tailwindConfig = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#007AFF',
+                        'bg-base': '#F2F2F7',
+                        'bg-card': '#FFFFFF',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Compiled Tailwind CSS (Production Version) */
+        /*! tailwindcss v3.4.1 | MIT License | https://tailwindcss.com */
+        *,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}
+        ::after,::before{--tw-content:''}
+        :host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif,system-ui,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}
+        body{margin:0;line-height:inherit}
+        hr{height:0;color:inherit;border-top-width:1px}
+        abbr:where([title]){text-decoration:underline dotted}
+        h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}
+        a{color:inherit;text-decoration:inherit}
+        b,strong{font-weight:bolder}
+        code,kbd,pre,samp{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em}
+        small{font-size:80%}
+        sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}
+        sub{bottom:-.25em}
+        sup{top:-.5em}
+        table{text-indent:0;border-color:inherit;border-collapse:collapse}
+        button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;color:inherit;margin:0;padding:0}
+        button,select{text-transform:none}
+        button,[type="button"],[type="reset"],[type="submit"]{-webkit-appearance:button;background-color:transparent;background-image:none}
+        :-moz-focusring{outline:auto}
+        :-moz-ui-invalid{box-shadow:none}
+        progress{vertical-align:baseline}
+        ::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}
+        [type="search"]{-webkit-appearance:textfield;outline-offset:-2px}
+        ::-webkit-search-decoration{-webkit-appearance:none}
+        ::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}
+        summary{display:list-item}
+        blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}
+        fieldset{margin:0;padding:0}
+        legend{padding:0}
+        menu,ol,ul{list-style:none;margin:0;padding:0}
+        textarea{resize:vertical}
+        input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}
+        [role="button"],button{cursor:pointer}
+        :disabled{cursor:default}
+        audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}
+        img,video{max-width:100%;height:auto}
+        [hidden]{display:none}
+        *,::after,::before{--tw-border-spacing:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: }
+        .fixed{position:fixed}
+        .absolute{position:absolute}
+        .relative{position:relative}
+        .inset-0{inset:0}
+        .top-0{top:0}
+        .bottom-0{bottom:0}
+        .left-0{left:0}
+        .right-0{right:0}
+        .z-10{z-index:10}
+        .z-20{z-index:20}
+        .z-30{z-index:30}
+        .z-40{z-index:40}
+        .z-50{z-index:50}
+        .z-\[60\]{z-index:60}
+        .z-\[100\]{z-index:100}
+        .col-span-2{grid-column:span 2/span 2}
+        .mx-auto{margin-left:auto;margin-right:auto}
+        .my-2{margin-top:0.5rem;margin-bottom:0.5rem}
+        .mt-1{margin-top:0.25rem}
+        .mt-2{margin-top:0.5rem}
+        .mt-3{margin-top:0.75rem}
+        .mt-4{margin-top:1rem}
+        .mt-6{margin-top:1.5rem}
+        .mt-8{margin-top:2rem}
+        .mb-1{margin-bottom:0.25rem}
+        .mb-2{margin-bottom:0.5rem}
+        .mb-3{margin-bottom:0.75rem}
+        .mb-4{margin-bottom:1rem}
+        .mb-6{margin-bottom:1.5rem}
+        .mb-8{margin-bottom:2rem}
+        .mr-1{margin-right:0.25rem}
+        .mr-2{margin-right:0.5rem}
+        .mr-3{margin-right:0.75rem}
+        .ml-2{margin-left:0.5rem}
+        .flex{display:flex}
+        .grid{display:grid}
+        .hidden{display:none}
+        .h-1\.5{height:0.375rem}
+        .h-10{height:2.5rem}
+        .h-12{height:3rem}
+        .h-16{height:4rem}
+        .h-2{height:0.5rem}
+        .h-24{height:6rem}
+        .h-3{height:0.75rem}
+        .h-4{height:1rem}
+        .h-5{height:1.25rem}
+        .h-6{height:1.5rem}
+        .h-8{height:2rem}
+        .h-9{height:2.25rem}
+        .h-\[85vh\]{height:85vh}
+        .h-full{height:100%}
+        .h-screen{height:100vh}
+        .max-h-96{max-height:24rem}
+        .max-w-2xl{max-width:42rem}
+        .max-w-\[80\%\]{max-width:80%}
+        .max-w-lg{max-width:32rem}
+        .max-w-sm{max-width:24rem}
+        .w-1{width:0.25rem}
+        .w-10{width:2.5rem}
+        .w-12{width:3rem}
+        .w-16{width:4rem}
+        .w-3{width:0.75rem}
+        .w-4{width:1rem}
+        .w-5{width:1.25rem}
+        .w-6{width:1.5rem}
+        .w-8{width:2rem}
+        .w-9{width:2.25rem}
+        .w-\[700px\]{width:700px}
+        .w-full{width:100%}
+        .w-screen{width:100vw}
+        .flex-1{flex:1 1 0%}
+        .flex-none{flex:none}
+        .-translate-y-2{--tw-translate-y:-0.5rem;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}
+        .-translate-y-4{--tw-translate-y:-1rem;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}
+        .translate-y-\[-100\%\]{--tw-translate-y:-100%;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}
+        .transform{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}
+        .cursor-pointer{cursor:pointer}
+        .resize{resize:both}
+        .list-disc{list-style-type:disc}
+        .grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+        .flex-col{flex-direction:column}
+        .items-start{align-items:flex-start}
+        .items-center{align-items:center}
+        .items-end{align-items:flex-end}
+        .justify-start{justify-content:flex-start}
+        .justify-center{justify-content:center}
+        .justify-between{justify-content:space-between}
+        .justify-around{justify-content:space-around}
+        .justify-end{justify-content:flex-end}
+        .gap-2{gap:0.5rem}
+        .gap-3{gap:0.75rem}
+        .gap-4{gap:1rem}
+        .space-x-1 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.25rem * var(--tw-space-x-reverse));margin-left:calc(0.25rem * calc(1 - var(--tw-space-x-reverse)))}
+        .space-x-2 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.5rem * var(--tw-space-x-reverse));margin-left:calc(0.5rem * calc(1 - var(--tw-space-x-reverse)))}
+        .space-x-3 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.75rem * var(--tw-space-x-reverse));margin-left:calc(0.75rem * calc(1 - var(--tw-space-x-reverse)))}
+        .space-y-1 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.25rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.25rem * var(--tw-space-y-reverse))}
+        .space-y-2 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.5rem * var(--tw-space-y-reverse))}
+        .space-y-3 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.75rem * var(--tw-space-y-reverse))}
+        .space-y-4 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem * var(--tw-space-y-reverse))}
+        .space-y-6 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1.5rem * var(--tw-space-y-reverse))}
+        .overflow-hidden{overflow:hidden}
+        .overflow-y-auto{overflow-y:auto}
+        .overflow-y-hidden{overflow-y:hidden}
+        .rounded-2xl{border-radius:1rem}
+        .rounded-full{border-radius:9999px}
+        .rounded-lg{border-radius:0.5rem}
+        .rounded-md{border-radius:0.375rem}
+        .rounded-sm{border-radius:0.125rem}
+        .rounded-t-2xl{border-top-left-radius:1rem;border-top-right-radius:1rem}
+        .rounded-xl{border-radius:0.75rem}
+        .border{border-width:1px}
+        .border-4{border-width:4px}
+        .border-t{border-top-width:1px}
+        .border-gray-100{--tw-border-opacity:1;border-color:rgb(243 244 246 / var(--tw-border-opacity))}
+        .border-gray-200{--tw-border-opacity:1;border-color:rgb(229 231 235 / var(--tw-border-opacity))}
+        .border-gray-300{--tw-border-opacity:1;border-color:rgb(209 213 219 / var(--tw-border-opacity))}
+        .border-yellow-100{--tw-border-opacity:1;border-color:rgb(254 243 199 / var(--tw-border-opacity))}
+        .bg-\[\#007AFF\]{--tw-bg-opacity:1;background-color:rgb(0 122 255 / var(--tw-bg-opacity))}
+        .bg-\[\#F2F2F7\]{--tw-bg-opacity:1;background-color:rgb(242 242 247 / var(--tw-bg-opacity))}
+        .bg-black{--tw-bg-opacity:1;background-color:rgb(0 0 0 / var(--tw-bg-opacity))}
+        .bg-black\/40{background-color:rgb(0 0 0 / 0.4)}
+        .bg-blue-100{--tw-bg-opacity:1;background-color:rgb(219 234 254 / var(--tw-bg-opacity))}
+        .bg-blue-500{--tw-bg-opacity:1;background-color:rgb(59 130 246 / var(--tw-bg-opacity))}
+        .bg-blue-50{--tw-bg-opacity:1;background-color:rgb(239 246 255 / var(--tw-bg-opacity))}
+        .bg-blue-600{--tw-bg-opacity:1;background-color:rgb(37 99 235 / var(--tw-border-opacity))}
+        .bg-gray-100{--tw-bg-opacity:1;background-color:rgb(243 244 246 / var(--tw-bg-opacity))}
+        .bg-gray-200{--tw-bg-opacity:1;background-color:rgb(229 231 235 / var(--tw-bg-opacity))}
+        .bg-gray-50{--tw-bg-opacity:1;background-color:rgb(249 250 251 / var(--tw-bg-opacity))}
+        .bg-gray-800{--tw-bg-opacity:1;background-color:rgb(31 41 55 / var(--tw-bg-opacity))}
+        .bg-gray-900{--tw-bg-opacity:1;background-color:rgb(17 24 39 / var(--tw-bg-opacity))}
+        .bg-green-500{--tw-bg-opacity:1;background-color:rgb(34 197 94 / var(--tw-bg-opacity))}
+        .bg-indigo-600{--tw-bg-opacity:1;background-color:rgb(79 70 229 / var(--tw-bg-opacity))}
+        .bg-red-100{--tw-bg-opacity:1;background-color:rgb(254 226 226 / var(--tw-bg-opacity))}
+        .bg-red-50{--tw-bg-opacity:1;background-color:rgb(254 242 242 / var(--tw-bg-opacity))}
+        .bg-red-500{--tw-bg-opacity:1;background-color:rgb(239 68 68 / var(--tw-bg-opacity))}
+        .bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity))}
+        .bg-white\/90{background-color:rgb(255 255 255 / 0.9)}
+        .bg-yellow-50{--tw-bg-opacity:1;background-color:rgb(254 252 232 / var(--tw-bg-opacity))}
+        .bg-gradient-to-tr{background-image:linear-gradient(to top right,var(--tw-gradient-stops))}
+        .from-blue-500{--tw-gradient-from:#3b82f6 var(--tw-gradient-from-position);--tw-gradient-to:rgb(59 130 246 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to)}
+        .to-indigo-600{--tw-gradient-to:#4f46e5 var(--tw-gradient-to-position)}
+        .p-1{padding:0.25rem}
+        .p-2{padding:0.5rem}
+        .p-3{padding:0.75rem}
+        .p-4{padding:1rem}
+        .p-6{padding:1.5rem}
+        .px-1{padding-left:0.25rem;padding-right:0.25rem}
+        .px-2{padding-left:0.5rem;padding-right:0.5rem}
+        .px-3{padding-left:0.75rem;padding-right:0.75rem}
+        .px-4{padding-left:1rem;padding-right:1rem}
+        .px-6{padding-left:1.5rem;padding-right:1.5rem}
+        .py-0\.5{padding-top:0.125rem;padding-bottom:0.125rem}
+        .py-1{padding-top:0.25rem;padding-bottom:0.25rem}
+        .py-1\.5{padding-top:0.375rem;padding-bottom:0.375rem}
+        .py-10{padding-top:2.5rem;padding-bottom:2.5rem}
+        .py-2{padding-top:0.5rem;padding-bottom:0.5rem}
+        .py-3{padding-top:0.75rem;padding-bottom:0.75rem}
+        .py-3\.5{padding-top:0.875rem;padding-bottom:0.875rem}
+        .py-4{padding-top:1rem;padding-bottom:1rem}
+        .py-6{padding-top:1.5rem;padding-bottom:1.5rem}
+        .pb-10{padding-bottom:2.5rem}
+        .pb-20{padding-bottom:5rem}
+        .pb-24{padding-bottom:6rem}
+        .pb-3{padding-bottom:0.75rem}
+        .pb-6{padding-bottom:1.5rem}
+        .pl-3{padding-left:0.75rem}
+        .pl-4{padding-left:1rem}
+        .pr-10{padding-right:2.5rem}
+        .pt-10{padding-top:2.5rem}
+        .pt-3{padding-top:0.75rem}
+        .pt-4{padding-top:1rem}
+        .text-left{text-align:left}
+        .text-center{text-align:center}
+        .text-2xl{font-size:1.5rem;line-height:2rem}
+        .text-3xl{font-size:1.875rem;line-height:2.25rem}
+        .text-\[10px\]{font-size:10px}
+        .text-\[12px\]{font-size:12px}
+        .text-lg{font-size:1.125rem;line-height:1.75rem}
+        .text-sm{font-size:0.875rem;line-height:1.25rem}
+        .text-xl{font-size:1.25rem;line-height:1.75rem}
+        .text-xs{font-size:0.75rem;line-height:1rem}
+        .font-bold{font-weight:700}
+        .font-medium{font-weight:500}
+        .font-semibold{font-weight:600}
+        .uppercase{text-transform:uppercase}
+        .leading-none{line-height:1}
+        .tracking-wide{letter-spacing:0.025em}
+        .tracking-wider{letter-spacing:0.05em}
+        .text-\[\#007AFF\]{--tw-text-opacity:1;color:rgb(0 122 255 / var(--tw-text-opacity))}
+        .text-blue-500{--tw-text-opacity:1;color:rgb(59 130 246 / var(--tw-text-opacity))}
+        .text-blue-600{--tw-text-opacity:1;color:rgb(37 99 235 / var(--tw-text-opacity))}
+        .text-gray-300{--tw-text-opacity:1;color:rgb(209 213 219 / var(--tw-text-opacity))}
+        .text-gray-400{--tw-text-opacity:1;color:rgb(156 163 175 / var(--tw-text-opacity))}
+        .text-gray-500{--tw-text-opacity:1;color:rgb(107 114 128 / var(--tw-text-opacity))}
+        .text-gray-600{--tw-text-opacity:1;color:rgb(75 85 99 / var(--tw-text-opacity))}
+        .text-gray-700{--tw-text-opacity:1;color:rgb(55 65 81 / var(--tw-text-opacity))}
+        .text-gray-800{--tw-text-opacity:1;color:rgb(31 41 55 / var(--tw-text-opacity))}
+        .text-gray-900{--tw-text-opacity:1;color:rgb(17 24 39 / var(--tw-text-opacity))}
+        .text-green-500{--tw-text-opacity:1;color:rgb(34 197 94 / var(--tw-text-opacity))}
+        .text-purple-500{--tw-text-opacity:1;color:rgb(168 85 247 / var(--tw-text-opacity))}
+        .text-red-500{--tw-text-opacity:1;color:rgb(239 68 68 / var(--tw-text-opacity))}
+        .text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity))}
+        .text-yellow-800{--tw-text-opacity:1;color:rgb(133 77 14 / var(--tw-text-opacity))}
+        .opacity-0{opacity:0}
+        .opacity-80{opacity:0.8}
+        .shadow-lg{--tw-shadow:0 10px 15px -3px rgb(0 0 0 / 0.1),0 4px 6px -4px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color),0 4px 6px -4px var(--tw-shadow-color)}
+        .shadow-md{--tw-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1),0 2px 4px -1px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 4px 6px -1px var(--tw-shadow-color),0 2px 4px -1px var(--tw-shadow-color)}
+        .shadow-sm{--tw-shadow:0 1px 2px 0 rgb(0 0 0 / 0.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color)}
+        .shadow-xl{--tw-shadow:0 20px 25px -5px rgb(0 0 0 / 0.1),0 8px 10px -6px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color),0 8px 10px -6px var(--tw-shadow-color)}
+        .shadow-blue-500\/20{--tw-shadow-color:rgb(59 130 246 / 0.2);--tw-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}
+        .shadow-blue-500\/30{--tw-shadow-color:rgb(59 130 246 / 0.3);--tw-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}
+        .shadow-blue-500\/40{--tw-shadow-color:rgb(59 130 246 / 0.4);--tw-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}
+        .shadow-gray-900\/20{--tw-shadow-color:rgb(17 24 39 / 0.2);--tw-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}
+        .backdrop-blur-md{--tw-backdrop-blur:blur(12px);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}
+        .backdrop-blur-xl{--tw-backdrop-blur:blur(24px);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}
+        .transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4,0,0.2,1);transition-duration:150ms}
+        .transition-colors{transition-property:color,background-color,border-color,text-decoration-color,fill,stroke;transition-timing-function:cubic-bezier(0.4,0,0.2,1);transition-duration:150ms}
+        .transition-transform{transition-property:transform;transition-timing-function:cubic-bezier(0.4,0,0.2,1);transition-duration:150ms}
+        .duration-150{transition-duration:150ms}
+        .duration-200{transition-duration:200ms}
+        .duration-300{transition-duration:300ms}
+        .ease-out{transition-timing-function:cubic-bezier(0,0,0.2,1)}
+        .line-clamp-2{overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+        @media (min-width:640px){.sm\:rounded-t-2xl{border-top-left-radius:1rem;border-top-right-radius:1rem}}
+    </style>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <style>
+        /* Custom iOS Styles */
+        :root {
+            --primary: #007AFF;
+            --bg-base: #F2F2F7;
+            --bg-card: #FFFFFF;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-base);
+            color: #1C1C1E;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none;
+        }
+
+        /* iOS Scrollbar Hide */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Safe Areas */
+        .safe-top { padding-top: env(safe-area-inset-top); }
+        .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        .safe-bottom-margin { margin-bottom: env(safe-area-inset-bottom); }
+
+        /* iOS Animations */
+        .ios-slide-up {
+            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .ios-fade-in {
+            animation: fadeIn 0.2s ease-out forwards;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Custom UI Elements */
+        .ios-card {
+            background: var(--bg-card);
+            border-radius: 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .ios-input {
+            background: #F2F2F7;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 16px;
+            width: 100%;
+            outline: none;
+            transition: background 0.2s;
+        }
+        .ios-input:focus {
+            background: #E5E5EA;
+        }
+
+        .ios-btn {
+            border-radius: 12px;
+            font-weight: 600;
+            transition: transform 0.1s, opacity 0.1s;
+        }
+        .ios-btn:active {
+            transform: scale(0.98);
+            opacity: 0.8;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+        }
+
+        /* Tab Bar Active State */
+        .tab-item.active {
+            color: var(--primary);
+        }
+        .tab-item.active i {
+            transform: translateY(-2px);
+        }
+
+        /* Status Badges */
+        .badge-pending { background: #FF950020; color: #FF9500; }
+        .badge-success { background: #34C75920; color: #34C759; }
+        .badge-error { background: #FF3B3020; color: #FF3B30; }
+        .badge-neutral { background: #8E8E9320; color: #8E8E93; }
+        .badge-blue { background: #007AFF20; color: #007AFF; }
+        .badge-purple { background: #AF52DE20; color: #AF52DE; }
+        .badge-yellow { background: #FFCC0020; color: #FFCC00; }
+
+        /* Custom Dropdown */
+        .custom-dropdown {
+            position: relative;
+            width: 100%;
+        }
+        .dropdown-btn {
+            background: #F2F2F7;
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 16px;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            border: none;
+            outline: none;
+            position: relative;
+        }
+        .dropdown-btn:after {
+            content: '▼';
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            color: #8E8E93;
+        }
+        .dropdown-options {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 10px;
+            margin-top: 4px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            z-index: 100;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+        .dropdown-option {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .dropdown-option:hover {
+            background: #F2F2F7;
+        }
+
+        /* Custom Alert */
+        .custom-alert {
+            background: white;
+            border-radius: 14px;
+            padding: 20px;
+            max-width: 300px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        .alert-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .alert-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 10px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+        }
+        .alert-btn.confirm {
+            background: #FF3B30;
+            color: white;
+        }
+        .alert-btn.cancel {
+            background: #F2F2F7;
+            color: #1C1C1E;
+        }
+
+        /* Payment QR Modal */
+        .qr-modal {
+            max-width: 400px;
+            text-align: center;
+        }
+        .qr-image {
+            width: 250px;
+            height: 250px;
+            margin: 20px auto;
+            background: #f5f5f5;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .qr-image img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col">
+
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6">
+        <div class="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30">
+            <i class="fas fa-flask text-white text-3xl"></i>
+        </div>
+        <h1 class="text-2xl font-bold mb-2">Research Craft</h1>
+        <p class="text-gray-500 mb-8 text-center">Client Portal</p>
+
+        <div class="w-full max-w-sm space-y-4">
+            <input type="email" id="auth-email" placeholder="Email" class="ios-input" value="client@example.com">
+            <input type="password" id="auth-password" placeholder="Password" class="ios-input" value="password123">
+            
+            <button onclick="handleLogin()" class="ios-btn w-full bg-[#007AFF] text-white py-3.5 text-lg shadow-lg shadow-blue-500/20">
+                Sign In
+            </button>
+            <button onclick="handleRegister()" class="ios-btn w-full bg-gray-100 text-blue-500 py-3.5 text-lg">
+                Create Account
+            </button>
+        </div>
+        <p class="mt-6 text-xs text-gray-400">Secure Firestore Connection</p>
+    </div>
+
+    <!-- Main App -->
+    <div id="app-container" class="flex-1 flex flex-col relative hidden">
+        
+        <header class="bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0 z-30 safe-top">
+            <div class="px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-xs">RC</span>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-gray-900 leading-none" id="header-title">Dashboard</h1>
+                        <span id="header-user-email" class="text-[10px] text-gray-500 font-medium">Loading...</span>
+                    </div>
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="openSalesChat()" class="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-blue-600 active:bg-blue-100 transition-colors">
+                        <i class="fas fa-comment-dots"></i>
+                    </button>
+                    <button onclick="handleLogout()" class="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center text-red-500 active:bg-red-100 transition-colors">
+                        <i class="fas fa-power-off"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main id="main-content" class="flex-1 overflow-y-auto hide-scrollbar pb-24 px-4 pt-4">
+            <!-- Content will be loaded here -->
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bg-white/90 backdrop-blur-xl border-t border-gray-200 fixed bottom-0 w-full z-40 safe-bottom">
+            <div class="flex justify-around items-center h-16 safe-bottom-margin">
+                <button onclick="router('dashboard')" class="tab-item active flex flex-col items-center justify-center w-full h-full text-gray-400 transition-colors" data-tab="dashboard">
+                    <i class="fas fa-chart-pie text-xl mb-1"></i>
+                    <span class="text-[10px] font-medium">Home</span>
+                </button>
+                <button onclick="router('orders')" class="tab-item flex flex-col items-center justify-center w-full h-full text-gray-400 transition-colors" data-tab="orders">
+                    <i class="fas fa-folder-open text-xl mb-1"></i>
+                    <span class="text-[10px] font-medium">Orders</span>
+                </button>
+                <button onclick="openCreateOrderModal()" class="flex flex-col items-center justify-center w-full h-full">
+                    <div class="w-12 h-12 bg-blue-600 rounded-full shadow-lg shadow-blue-500/40 flex items-center justify-center transform -translate-y-4 border-4 border-[#F2F2F7]">
+                        <i class="fas fa-plus text-white text-xl"></i>
+                    </div>
+                </button>
+                <button onclick="router('payments')" class="tab-item flex flex-col items-center justify-center w-full h-full text-gray-400 transition-colors" data-tab="payments">
+                    <i class="fas fa-credit-card text-xl mb-1"></i>
+                    <span class="text-[10px] font-medium">Payments</span>
+                </button>
+                <button onclick="router('support')" class="tab-item flex flex-col items-center justify-center w-full h-full text-gray-400 transition-colors" data-tab="support">
+                    <i class="fas fa-life-ring text-xl mb-1"></i>
+                    <span class="text-[10px] font-medium">Support</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Modals & Overlays -->
+    <div id="modal-container" class="fixed inset-0 z-50 pointer-events-none flex items-end justify-center sm:items-center"></div>
+    <div id="toast-container" class="fixed top-2 left-0 right-0 z-[60] flex flex-col items-center space-y-2 pointer-events-none safe-top"></div>
+
+    <script>
+        // ==================== FIREBASE CONFIGURATION ====================
+        const firebaseConfig = {
+            apiKey: "AIzaSyBDeDc6pWhghXmGYg9QYQ3nVAGTpo1u5AM",
+            authDomain: "research-craft.firebaseapp.com",
+            projectId: "research-craft",
+            storageBucket: "research-craft.firebasestorage.app",
+            messagingSenderId: "284823836570",
+            appId: "1:284823836570:web:fb0d93cdf92368525d8c23",
+            measurementId: "G-6H5BS98612"
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // ==================== GLOBAL STATE ====================
+        let currentUser = null;
+        let activeListeners = [];
+        let currentView = 'dashboard';
+        let pendingAlertCallback = null;
+
+        // ==================== AUTHENTICATION ====================
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                if (userDoc.exists && userDoc.data().role === 'client') {
+                    currentUser = user;
+                    document.getElementById('header-user-email').textContent = user.email;
+                    document.getElementById('auth-screen').classList.add('hidden');
+                    document.getElementById('app-container').classList.remove('hidden');
+                    router('dashboard');
+                } else if (!userDoc.exists) {
+                    await db.collection('users').doc(user.uid).set({
+                        email: user.email,
+                        role: 'client',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    currentUser = user;
+                    document.getElementById('header-user-email').textContent = user.email;
+                    document.getElementById('auth-screen').classList.add('hidden');
+                    document.getElementById('app-container').classList.remove('hidden');
+                    router('dashboard');
+                } else {
+                    showToast('Access Denied: Clients Only', 'error');
+                    auth.signOut();
+                }
+            } else {
+                currentUser = null;
+                cleanupListeners();
+                document.getElementById('app-container').classList.add('hidden');
+                document.getElementById('auth-screen').classList.remove('hidden');
+            }
+        });
+
+        async function handleLogin() {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-password').value;
+            try {
+                await auth.signInWithEmailAndPassword(email, pass);
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        async function handleRegister() {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-password').value;
+            try {
+                await auth.createUserWithEmailAndPassword(email, pass);
+                showToast('Account created', 'success');
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        function handleLogout() {
+            auth.signOut();
+        }
+
+        function cleanupListeners() {
+            activeListeners.forEach(unsubscribe => unsubscribe());
+            activeListeners = [];
+        }
+
+        // ==================== ROUTER ====================
+        function router(viewName) {
+            currentView = viewName;
+            document.getElementById('header-title').textContent = 
+                viewName.charAt(0).toUpperCase() + viewName.slice(1);
+            
+            document.querySelectorAll('.tab-item').forEach(el => {
+                el.classList.toggle('active', el.dataset.tab === viewName);
+            });
+
+            const main = document.getElementById('main-content');
+            main.innerHTML = '<div class="flex justify-center pt-10"><i class="fas fa-spinner fa-spin text-blue-500 text-2xl"></i></div>';
+            
+            if (viewName === 'dashboard') loadDashboard(main);
+            else if (viewName === 'orders') loadOrders(main);
+            else if (viewName === 'payments') loadPayments(main);
+            else if (viewName === 'support') loadSupport(main);
+        }
+
+        // ==================== DASHBOARD VIEW ====================
+        function loadDashboard(container) {
+            container.innerHTML = `
+                <div class="space-y-6 ios-fade-in">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="ios-card p-4 bg-blue-500 text-white">
+                            <p class="text-xs opacity-80 font-medium uppercase tracking-wide">Active Orders</p>
+                            <h2 class="text-3xl font-bold mt-1" id="dash-orders-count">0</h2>
+                        </div>
+                        <div class="ios-card p-4">
+                            <p class="text-xs text-gray-500 font-medium uppercase tracking-wide">Pending Payment</p>
+                            <h2 class="text-3xl font-bold mt-1 text-gray-900" id="dash-payment-amt">$0</h2>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-3 px-1">
+                            <h3 class="font-bold text-lg">Recent Orders</h3>
+                            <button onclick="router('orders')" class="text-blue-500 text-sm font-medium">See All</button>
+                        </div>
+                        <div class="space-y-3" id="dash-recent-list">
+                            <div class="text-center text-gray-400 py-4">Loading...</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-3 px-1">
+                            <h3 class="font-bold text-lg">Pending Payments</h3>
+                            <button onclick="router('payments')" class="text-blue-500 text-sm font-medium">See All</button>
+                        </div>
+                        <div class="space-y-3" id="dash-payments-list">
+                            <div class="text-center text-gray-400 py-4">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Active Orders Count
+            const unsubOrders = db.collection('orders')
+                .where('clientUid', '==', currentUser.uid)
+                .where('status', 'in', ['pending', 'in-progress', 'review'])
+                .onSnapshot(snap => {
+                    document.getElementById('dash-orders-count').textContent = snap.size;
+                }, error => console.error('Orders error:', error));
+            activeListeners.push(unsubOrders);
+
+            // Pending Payments Total
+            const unsubPayments = db.collection('payments')
+                .where('clientUid', '==', currentUser.uid)
+                .where('status', '==', 'pending')
+                .onSnapshot(snap => {
+                    let total = 0;
+                    snap.forEach(doc => total += (doc.data().amount || 0));
+                    document.getElementById('dash-payment-amt').textContent = `$${total}`;
+                }, error => console.error('Payments error:', error));
+            activeListeners.push(unsubPayments);
+
+            // Recent Orders
+            const unsubRecent = db.collection('orders')
+                .where('clientUid', '==', currentUser.uid)
+                .orderBy('createdAt', 'desc')
+                .limit(3)
+                .onSnapshot(snap => {
+                    const list = document.getElementById('dash-recent-list');
+                    if(snap.empty) {
+                        list.innerHTML = '<div class="text-center text-gray-400 py-4">No recent orders</div>';
+                        return;
+                    }
+                    list.innerHTML = '';
+                    snap.forEach(doc => {
+                        const data = doc.data();
+                        list.innerHTML += `
+                            <div class="ios-card p-4 flex items-center justify-between" onclick="openOrderDetails('${doc.id}')">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
+                                        <i class="fas fa-file-alt"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-sm">${data.title}</h4>
+                                        <p class="text-xs text-gray-500 capitalize">${data.status}</p>
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-300 text-sm"></i>
+                            </div>
+                        `;
+                    });
+                }, error => console.error('Recent orders error:', error));
+            activeListeners.push(unsubRecent);
+
+            // Recent Payments
+            const unsubRecentPayments = db.collection('payments')
+                .where('clientUid', '==', currentUser.uid)
+                .where('status', '==', 'pending')
+                .orderBy('createdAt', 'desc')
+                .limit(3)
+                .onSnapshot(snap => {
+                    const list = document.getElementById('dash-payments-list');
+                    if(snap.empty) {
+                        list.innerHTML = '<div class="text-center text-gray-400 py-4">No pending payments</div>';
+                        return;
+                    }
+                    list.innerHTML = '';
+                    snap.forEach(doc => {
+                        const data = doc.data();
+                        list.innerHTML += `
+                            <div class="ios-card p-4 flex items-center justify-between" onclick="openPaymentDetails('${doc.id}')">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-500">
+                                        <i class="fas fa-dollar-sign"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-sm">${data.title}</h4>
+                                        <p class="text-xs text-gray-500">$${data.amount}</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs font-bold px-2 py-1 rounded-full badge-pending">Pending</span>
+                            </div>
+                        `;
+                    });
+                }, error => console.error('Recent payments error:', error));
+            activeListeners.push(unsubRecentPayments);
+        }
+
+        // ==================== ORDERS VIEW ====================
+        function loadOrders(container) {
+            container.innerHTML = `
+                <div class="space-y-4 ios-fade-in pb-20">
+                    <h2 class="text-2xl font-bold px-1">My Orders</h2>
+                    <div id="orders-list" class="space-y-3">
+                        <div class="flex justify-center py-10"><i class="fas fa-spinner fa-spin text-gray-400"></i></div>
+                    </div>
+                </div>
+            `;
+
+            const unsub = db.collection('orders')
+                .where('clientUid', '==', currentUser.uid)
+                .orderBy('createdAt', 'desc')
+                .onSnapshot(snap => {
+                    const list = document.getElementById('orders-list');
+                    list.innerHTML = '';
+                    
+                    if (snap.empty) {
+                        list.innerHTML = '<div class="text-center text-gray-400 mt-10">No orders found. Tap + to create one.</div>';
+                        return;
+                    }
+
+                    snap.forEach(doc => {
+                        const data = doc.data();
+                        const status = data.status || 'pending';
+                        const badgeColor = status === 'completed' ? 'badge-success' : 
+                                          status === 'pending' ? 'badge-pending' : 
+                                          status === 'in-progress' ? 'badge-blue' : 
+                                          status === 'cancelled' ? 'badge-error' : 'badge-neutral';
+                        
+                        list.innerHTML += `
+                            <div class="ios-card overflow-hidden">
+                                <div class="p-4" onclick="openOrderDetails('${doc.id}')">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <span class="text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider ${badgeColor}">
+                                            ${status}
+                                        </span>
+                                        <span class="text-xs text-gray-400">${formatDate(data.createdAt)}</span>
+                                    </div>
+                                    <h3 class="font-bold text-lg mb-1">${data.title || 'Untitled Order'}</h3>
+                                    <p class="text-sm text-gray-500 line-clamp-2">${data.description || 'No description'}</p>
+                                    ${data.budget ? `<p class="text-sm font-medium mt-2">Budget: $${data.budget}</p>` : ''}
+                                </div>
+                                <div class="bg-gray-50 px-4 py-3 flex border-t border-gray-100">
+                                    <button onclick="openOrderChat('${doc.id}', '${data.title}')" class="flex-1 text-sm font-semibold text-blue-600 flex items-center justify-center space-x-2">
+                                        <i class="fas fa-comments"></i> <span>Chat</span>
+                                    </button>
+                                    <div class="w-px bg-gray-200 mx-2"></div>
+                                    <button onclick="openUpdateRequestModal('${doc.id}')" class="flex-1 text-sm font-semibold text-purple-600 flex items-center justify-center space-x-2">
+                                        <i class="fas fa-edit"></i> <span>Update</span>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }, error => {
+                    console.error('Orders listener error:', error);
+                    document.getElementById('orders-list').innerHTML = '<div class="text-center text-red-500 mt-10">Error loading orders</div>';
+                });
+            activeListeners.push(unsub);
+        }
+
+        // ==================== PAYMENTS VIEW ====================
+        function loadPayments(container) {
+            container.innerHTML = `
+                <div class="space-y-4 ios-fade-in pb-20">
+                    <h2 class="text-2xl font-bold px-1">Payments</h2>
+                    <div class="ios-card p-4 mb-4">
+                        <h3 class="font-bold mb-2">Payment Summary</h3>
+                        <div class="flex justify-between">
+                            <div>
+                                <p class="text-xs text-gray-500">Pending</p>
+                                <p class="text-lg font-bold" id="total-pending">$0</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Paid</p>
+                                <p class="text-lg font-bold text-green-500" id="total-paid">$0</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Total</p>
+                                <p class="text-lg font-bold" id="total-all">$0</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="custom-dropdown mb-4">
+                        <button class="dropdown-btn" id="payment-filter">All Payments</button>
+                        <div class="dropdown-options" id="payment-filter-options">
+                            <div class="dropdown-option" data-value="all">All Payments</div>
+                            <div class="dropdown-option" data-value="pending">Pending</div>
+                            <div class="dropdown-option" data-value="paid">Paid</div>
+                            <div class="dropdown-option" data-value="confirmed">Confirmed</div>
+                            <div class="dropdown-option" data-value="cancelled">Cancelled</div>
+                        </div>
+                    </div>
+
+                    <div id="payments-list" class="space-y-3"></div>
+                </div>
+            `;
+
+            // Initialize dropdown
+            initDropdown('payment-filter', 'payment-filter-options', (value) => {
+                loadPaymentsData(value);
+            });
+
+            // Load all payments by default
+            loadPaymentsData('all');
+        }
+
+        function loadPaymentsData(filter = 'all') {
+            let query = db.collection('payments')
+                .where('clientUid', '==', currentUser.uid);
+
+            if (filter !== 'all') {
+                query = query.where('status', '==', filter);
+            }
+
+            const unsub = query.orderBy('createdAt', 'desc').onSnapshot(snap => {
+                const list = document.getElementById('payments-list');
+                list.innerHTML = '';
+                
+                if (snap.empty) {
+                    list.innerHTML = '<div class="text-center text-gray-400 mt-10">No payments found</div>';
+                    updatePaymentTotals(snap);
+                    return;
+                }
+
+                let pendingTotal = 0;
+                let paidTotal = 0;
+                let allTotal = 0;
+
+                snap.forEach(doc => {
+                    const payment = doc.data();
+                    const amount = payment.amount || 0;
+                    allTotal += amount;
+                    
+                    if (payment.status === 'pending') pendingTotal += amount;
+                    if (payment.status === 'paid' || payment.status === 'confirmed') paidTotal += amount;
+
+                    const statusBadge = payment.status === 'pending' ? 'badge-pending' :
+                                       payment.status === 'paid' ? 'badge-yellow' :
+                                       payment.status === 'confirmed' ? 'badge-success' :
+                                       'badge-error';
+
+                    list.innerHTML += `
+                        <div class="ios-card p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <h3 class="font-bold">${payment.title || 'Payment'}</h3>
+                                    <p class="text-sm text-gray-500">${payment.reason || 'No reason provided'}</p>
+                                </div>
+                                <span class="text-xs font-bold px-2 py-1 rounded-full uppercase ${statusBadge}">
+                                    ${payment.status}
+                                </span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center mt-3">
+                                <div>
+                                    <p class="text-2xl font-bold">$${amount}</p>
+                                    <p class="text-xs text-gray-400">ID: ${doc.id.substring(0, 8)}</p>
+                                </div>
+                                
+                                <div class="flex space-x-2">
+                                    ${payment.status === 'pending' ? `
+                                        <button onclick="markPaymentAsPaid('${doc.id}')" class="px-3 py-1.5 bg-green-500 text-white rounded-lg text-sm font-semibold">
+                                            Mark Paid
+                                        </button>
+                                    ` : ''}
+                                    <button onclick="showPaymentQR('${doc.id}')" class="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-sm font-semibold">
+                                        View QR
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            ${payment.paidAt ? `<p class="text-xs text-gray-500 mt-2">Paid: ${formatDate(payment.paidAt)}</p>` : ''}
+                            ${payment.confirmedAt ? `<p class="text-xs text-green-500 mt-1">Confirmed: ${formatDate(payment.confirmedAt)}</p>` : ''}
+                        </div>
+                    `;
+                });
+
+                updatePaymentTotals(pendingTotal, paidTotal, allTotal);
+            }, error => {
+                console.error('Payments listener error:', error);
+                document.getElementById('payments-list').innerHTML = '<div class="text-center text-red-500 mt-10">Error loading payments</div>';
+            });
+
+            activeListeners.push(unsub);
+        }
+
+        function updatePaymentTotals(pending, paid, all) {
+            document.getElementById('total-pending').textContent = `$${pending || 0}`;
+            document.getElementById('total-paid').textContent = `$${paid || 0}`;
+            document.getElementById('total-all').textContent = `$${all || 0}`;
+        }
+
+        // ==================== SUPPORT TICKETS VIEW ====================
+        function loadSupport(container) {
+            container.innerHTML = `
+                <div class="space-y-4 ios-fade-in pb-20">
+                    <div class="flex justify-between items-center px-1">
+                        <h2 class="text-2xl font-bold">Support Tickets</h2>
+                        <button onclick="openCreateTicketModal()" class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-lg shadow-gray-900/20 active:scale-95 transition-transform">
+                            New Ticket
+                        </button>
+                    </div>
+
+                    <div class="custom-dropdown mb-4">
+                        <button class="dropdown-btn" id="ticket-filter">All Tickets</button>
+                        <div class="dropdown-options" id="ticket-filter-options">
+                            <div class="dropdown-option" data-value="all">All Tickets</div>
+                            <div class="dropdown-option" data-value="open">Open</div>
+                            <div class="dropdown-option" data-value="closed">Closed</div>
+                            <div class="dropdown-option" data-value="pending">Pending</div>
+                        </div>
+                    </div>
+
+                    <div id="tickets-list" class="space-y-3"></div>
+                </div>
+            `;
+
+            // Initialize dropdown
+            initDropdown('ticket-filter', 'ticket-filter-options', (value) => {
+                loadTicketsData(value);
+            });
+
+            // Load all tickets by default
+            loadTicketsData('all');
+        }
+
+        function loadTicketsData(filter = 'all') {
+            let query = db.collection('tickets')
+                .where('clientUid', '==', currentUser.uid);
+
+            if (filter !== 'all') {
+                query = query.where('status', '==', filter);
+            }
+
+            const unsub = query.orderBy('createdAt', 'desc').onSnapshot(snap => {
+                const list = document.getElementById('tickets-list');
+                list.innerHTML = '';
+                
+                if (snap.empty) {
+                    list.innerHTML = '<div class="text-center text-gray-400 mt-10">No tickets found</div>';
+                    return;
+                }
+
+                snap.forEach(doc => {
+                    const ticket = doc.data();
+                    const statusColor = ticket.status === 'open' ? 'badge-blue' :
+                                      ticket.status === 'closed' ? 'badge-success' :
+                                      'badge-pending';
+
+                    list.innerHTML += `
+                        <div class="ios-card p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="flex-1">
+                                    <h3 class="font-bold">${ticket.subject || 'No Subject'}</h3>
+                                    <p class="text-sm text-gray-500 mt-1">${ticket.description || 'No description'}</p>
+                                </div>
+                                <span class="text-xs font-bold px-2 py-1 rounded-full uppercase ${statusColor}">
+                                    ${ticket.status}
+                                </span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center mt-3">
+                                <div class="flex space-x-2">
+                                    <span class="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600 uppercase">
+                                        ${ticket.priority || 'medium'} priority
+                                    </span>
+                                    <span class="text-xs text-gray-400">
+                                        ${formatDate(ticket.createdAt)}
+                                    </span>
+                                </div>
+                                
+                                <div class="flex space-x-2">
+                                    ${ticket.status === 'open' ? `
+                                        <button onclick="closeTicket('${doc.id}')" class="text-xs text-green-600 font-semibold">
+                                            Mark Closed
+                                        </button>
+                                    ` : ''}
+                                    <button onclick="deleteTicket('${doc.id}')" class="text-xs text-red-600 font-semibold">
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }, error => {
+                console.error('Tickets listener error:', error);
+                document.getElementById('tickets-list').innerHTML = '<div class="text-center text-red-500 mt-10">Error loading tickets</div>';
+            });
+
+            activeListeners.push(unsub);
+        }
+
+        // ==================== ORDER DETAILS & CRUD ====================
+        function openOrderDetails(orderId) {
+            db.collection('orders').doc(orderId).get().then(doc => {
+                if (!doc.exists) {
+                    showToast('Order not found', 'error');
+                    return;
+                }
+
+                const order = doc.data();
+                openModal(`
+                    <div class="p-6 max-h-96 overflow-y-auto">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-xl font-bold">${order.title || 'Order Details'}</h3>
+                            <button onclick="deleteOrder('${orderId}')" class="text-red-500">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-xs text-gray-500 uppercase">Description</label>
+                                <p class="mt-1">${order.description || 'No description'}</p>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-xs text-gray-500 uppercase">Status</label>
+                                    <p class="mt-1 capitalize">${order.status || 'pending'}</p>
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500 uppercase">Budget</label>
+                                    <p class="mt-1 font-bold">${order.budget ? '$' + order.budget : 'Not set'}</p>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="text-xs text-gray-500 uppercase">Created</label>
+                                <p class="mt-1">${formatDate(order.createdAt)}</p>
+                            </div>
+                            
+                            ${order.updatedAt ? `
+                                <div>
+                                    <label class="text-xs text-gray-500 uppercase">Last Updated</label>
+                                    <p class="mt-1">${formatDate(order.updatedAt)}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="mt-6 flex space-x-2">
+                            <button onclick="openOrderChat('${orderId}', '${order.title}')" class="flex-1 ios-btn bg-blue-500 text-white py-3">
+                                <i class="fas fa-comments mr-2"></i> Chat
+                            </button>
+                            <button onclick="openUpdateRequestModal('${orderId}')" class="flex-1 ios-btn bg-purple-500 text-white py-3">
+                                <i class="fas fa-edit mr-2"></i> Request Update
+                            </button>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        function openCreateOrderModal() {
+            openModal(`
+                <div class="p-6 pb-10">
+                    <h3 class="text-xl font-bold mb-4">Create New Order</h3>
+                    <input id="new-order-title" class="ios-input mb-3" placeholder="Order Title" required>
+                    <textarea id="new-order-desc" class="ios-input mb-3 h-24" placeholder="Detailed Description"></textarea>
+                    <input id="new-order-budget" type="number" class="ios-input mb-4" placeholder="Budget ($)" min="0">
+                    <button onclick="createOrder()" class="ios-btn w-full bg-blue-600 text-white py-3 shadow-lg shadow-blue-500/30">
+                        Create Order
+                    </button>
+                </div>
+            `);
+        }
+
+        async function createOrder() {
+            const title = document.getElementById('new-order-title').value;
+            const description = document.getElementById('new-order-desc').value;
+            const budget = document.getElementById('new-order-budget').value;
+
+            if (!title.trim()) {
+                showToast('Order title is required', 'error');
+                return;
+            }
+
+            try {
+                await db.collection('orders').add({
+                    clientUid: currentUser.uid,
+                    clientEmail: currentUser.email,
+                    title: title.trim(),
+                    description: description.trim(),
+                    budget: budget ? parseFloat(budget) : 0,
+                    status: 'pending',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                closeModal();
+                showToast('Order created successfully', 'success');
+                router('orders');
+            } catch (error) {
+                showToast('Error creating order: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteOrder(orderId) {
+            showCustomAlert(
+                'Delete Order',
+                'Are you sure you want to delete this order? This action cannot be undone.',
+                async () => {
+                    try {
+                        await db.collection('orders').doc(orderId).delete();
+                        closeModal();
+                        showToast('Order deleted', 'success');
+                        router('orders');
+                    } catch (error) {
+                        showToast('Error deleting order: ' + error.message, 'error');
+                    }
+                }
+            );
+        }
+
+        // ==================== UPDATE REQUESTS ====================
+        function openUpdateRequestModal(orderId) {
+            openModal(`
+                <div class="p-6 pb-10">
+                    <h3 class="text-xl font-bold mb-4">Request Order Update</h3>
+                    <textarea id="update-request-desc" class="ios-input mb-3 h-24" placeholder="Describe what updates you need..." required></textarea>
+                    <input id="update-request-price" type="number" class="ios-input mb-4" placeholder="Proposed Price ($)" min="0">
+                    <button onclick="submitUpdateRequest('${orderId}')" class="ios-btn w-full bg-purple-600 text-white py-3">
+                        Submit Request
+                    </button>
+                </div>
+            `);
+        }
+
+        async function submitUpdateRequest(orderId) {
+            const description = document.getElementById('update-request-desc').value;
+            const price = document.getElementById('update-request-price').value;
+
+            if (!description.trim()) {
+                showToast('Description is required', 'error');
+                return;
+            }
+
+            try {
+                await db.collection('update_requests').add({
+                    orderId: orderId,
+                    clientUid: currentUser.uid,
+                    clientEmail: currentUser.email,
+                    description: description.trim(),
+                    proposedPrice: price ? parseFloat(price) : 0,
+                    status: 'pending',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                closeModal();
+                showToast('Update request submitted', 'success');
+            } catch (error) {
+                showToast('Error submitting request: ' + error.message, 'error');
+            }
+        }
+
+        // ==================== PAYMENT FUNCTIONS ====================
+        async function markPaymentAsPaid(paymentId) {
+            showCustomAlert(
+                'Confirm Payment',
+                'Have you completed the payment? This will notify the agent for confirmation.',
+                async () => {
+                    try {
+                        await db.collection('payments').doc(paymentId).update({
+                            status: 'paid',
+                            paidAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        showToast('Payment marked as paid', 'success');
+                        router('payments');
+                    } catch (error) {
+                        showToast('Error updating payment: ' + error.message, 'error');
+                    }
+                }
+            );
+        }
+
+        function showPaymentQR(paymentId) {
+            db.collection('payments').doc(paymentId).get().then(doc => {
+                if (!doc.exists) return;
+                
+                const payment = doc.data();
+                openModal(`
+                    <div class="p-6 qr-modal">
+                        <h3 class="text-xl font-bold mb-2">${payment.title || 'Payment'}</h3>
+                        <p class="text-gray-500 mb-4">$${payment.amount} - ${payment.reason || 'No reason'}</p>
+                        
+                        <div class="qr-image">
+                            <img src="qrpayment.jpg" alt="Payment QR Code">
+                        </div>
+                        
+                        <p class="text-sm text-gray-500 mt-4">Scan QR code to complete payment</p>
+                        <p class="text-xs text-gray-400 mt-2">Payment ID: ${paymentId.substring(0, 12)}</p>
+                        
+                        ${payment.status === 'pending' ? `
+                            <button onclick="markPaymentAsPaid('${paymentId}')" class="ios-btn w-full bg-green-500 text-white py-3 mt-4">
+                                <i class="fas fa-check-circle mr-2"></i> I Have Paid
+                            </button>
+                        ` : ''}
+                    </div>
+                `);
+            });
+        }
+
+        function openPaymentDetails(paymentId) {
+            db.collection('payments').doc(paymentId).get().then(doc => {
+                if (!doc.exists) return;
+                
+                const payment = doc.data();
+                openModal(`
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold mb-4">Payment Details</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="text-xs text-gray-500 uppercase">Title</label>
+                                <p class="mt-1 font-medium">${payment.title || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 uppercase">Reason</label>
+                                <p class="mt-1">${payment.reason || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 uppercase">Amount</label>
+                                <p class="mt-1 text-2xl font-bold">$${payment.amount || 0}</p>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 uppercase">Status</label>
+                                <p class="mt-1 capitalize">${payment.status || 'pending'}</p>
+                            </div>
+                            ${payment.paidAt ? `
+                                <div>
+                                    <label class="text-xs text-gray-500 uppercase">Paid Date</label>
+                                    <p class="mt-1">${formatDate(payment.paidAt)}</p>
+                                </div>
+                            ` : ''}
+                            ${payment.confirmedAt ? `
+                                <div>
+                                    <label class="text-xs text-gray-500 uppercase">Confirmed Date</label>
+                                    <p class="mt-1">${formatDate(payment.confirmedAt)}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="mt-6 flex space-x-2">
+                            <button onclick="showPaymentQR('${paymentId}')" class="flex-1 ios-btn bg-blue-500 text-white py-3">
+                                View QR Code
+                            </button>
+                            ${payment.status === 'pending' ? `
+                                <button onclick="markPaymentAsPaid('${paymentId}')" class="flex-1 ios-btn bg-green-500 text-white py-3">
+                                    Mark Paid
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        // ==================== TICKET FUNCTIONS ====================
+        function openCreateTicketModal() {
+            openModal(`
+                <div class="p-6">
+                    <h3 class="text-xl font-bold mb-4">New Support Ticket</h3>
+                    <input id="ticket-subject" class="ios-input mb-3" placeholder="Subject" required>
+                    
+                    <div class="custom-dropdown mb-3">
+                        <button class="dropdown-btn" id="ticket-priority">Medium Priority</button>
+                        <div class="dropdown-options" id="ticket-priority-options">
+                            <div class="dropdown-option" data-value="low">Low Priority</div>
+                            <div class="dropdown-option" data-value="medium">Medium Priority</div>
+                            <div class="dropdown-option" data-value="high">High Priority</div>
+                            <div class="dropdown-option" data-value="urgent">Urgent</div>
+                        </div>
+                    </div>
+                    
+                    <textarea id="ticket-desc" class="ios-input mb-4 h-32" placeholder="Describe your issue..." required></textarea>
+                    <button onclick="createTicket()" class="ios-btn w-full bg-black text-white py-3">
+                        Submit Ticket
+                    </button>
+                </div>
+            `);
+            
+            initDropdown('ticket-priority', 'ticket-priority-options');
+        }
+
+        async function createTicket() {
+            const subject = document.getElementById('ticket-subject').value;
+            const description = document.getElementById('ticket-desc').value;
+            const priority = document.getElementById('ticket-priority').textContent.split(' ')[0].toLowerCase();
+
+            if (!subject.trim() || !description.trim()) {
+                showToast('Subject and description are required', 'error');
+                return;
+            }
+
+            try {
+                await db.collection('tickets').add({
+                    clientUid: currentUser.uid,
+                    clientEmail: currentUser.email,
+                    subject: subject.trim(),
+                    description: description.trim(),
+                    priority: priority,
+                    status: 'open',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                closeModal();
+                showToast('Ticket created successfully', 'success');
+                router('support');
+            } catch (error) {
+                showToast('Error creating ticket: ' + error.message, 'error');
+            }
+        }
+
+        async function closeTicket(ticketId) {
+            try {
+                await db.collection('tickets').doc(ticketId).update({
+                    status: 'closed',
+                    closedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                showToast('Ticket closed', 'success');
+            } catch (error) {
+                showToast('Error closing ticket: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteTicket(ticketId) {
+            showCustomAlert(
+                'Delete Ticket',
+                'Are you sure you want to delete this ticket? This action cannot be undone.',
+                async () => {
+                    try {
+                        await db.collection('tickets').doc(ticketId).delete();
+                        showToast('Ticket deleted', 'success');
+                        router('support');
+                    } catch (error) {
+                        showToast('Error deleting ticket: ' + error.message, 'error');
+                    }
+                }
+            );
+        }
+
+        // ==================== CHAT SYSTEM ====================
+        function openSalesChat() {
+            openChatInterface('sales_' + currentUser.uid, 'Sales Support');
+        }
+
+        function openOrderChat(orderId, orderTitle) {
+            openChatInterface('order_' + orderId, 'Order: ' + orderTitle);
+        }
+
+        function openChatInterface(chatId, title) {
+            openModal(`
+                <div class="flex flex-col h-[85vh] w-full bg-white rounded-t-2xl overflow-hidden">
+                    <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-white">
+                        <h3 class="font-bold truncate max-w-[80%]">${title}</h3>
+                        <button onclick="closeModal()" class="text-gray-400">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+                        <div class="text-center text-gray-400 py-4">Loading messages...</div>
+                    </div>
+                    <div class="p-3 bg-white border-t border-gray-100 safe-bottom-margin">
+                        <form onsubmit="sendChatMessage(event, '${chatId}')" class="flex space-x-2">
+                            <input id="chat-input" class="ios-input flex-1" placeholder="Type a message..." autocomplete="off" required>
+                            <button type="submit" class="w-12 h-12 bg-blue-500 rounded-xl text-white flex items-center justify-center shadow-md">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            `);
+
+            const messagesContainer = document.getElementById('chat-messages');
+            let chatUnsub = null;
+
+            // Create chat document if it doesn't exist
+            db.collection('chats').doc(chatId).set({
+                lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+                participants: [currentUser.uid],
+                title: title
+            }, { merge: true }).then(() => {
+                // Listen for messages
+                chatUnsub = db.collection('chats').doc(chatId).collection('messages')
+                    .orderBy('timestamp', 'asc')
+                    .onSnapshot(snap => {
+                        messagesContainer.innerHTML = '';
+                        
+                        if (snap.empty) {
+                            messagesContainer.innerHTML = '<div class="text-center text-gray-400 py-8">No messages yet. Start the conversation!</div>';
+                            return;
+                        }
+
+                        snap.forEach(doc => {
+                            const msg = doc.data();
+                            const isMe = msg.senderUid === currentUser.uid;
+                            
+                            messagesContainer.innerHTML += `
+                                <div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
+                                    <div class="max-w-[75%] px-4 py-2 rounded-2xl text-sm ${
+                                        isMe ? 'bg-blue-500 text-white rounded-br-none' : 'bg-white border border-gray-200 text-gray-800 rounded-bl-none'
+                                    }">
+                                        ${msg.text}
+                                        <div class="text-xs opacity-70 mt-1 ${isMe ? 'text-blue-100' : 'text-gray-500'}">
+                                            ${formatTime(msg.timestamp)}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+
+                        // Scroll to bottom
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    }, error => {
+                        console.error('Chat error:', error);
+                        messagesContainer.innerHTML = '<div class="text-center text-red-500 py-8">Error loading messages</div>';
+                    });
+            });
+
+            // Clean up listener when modal closes
+            const modal = document.querySelector('#modal-container > div');
+            if (modal) {
+                const originalClose = modal.querySelector('button[onclick="closeModal()"]');
+                if (originalClose) {
+                    originalClose.onclick = () => {
+                        if (chatUnsub) chatUnsub();
+                        closeModal();
+                    };
+                }
+            }
+        }
+
+        async function sendChatMessage(e, chatId) {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            
+            if (!text) return;
+
+            try {
+                await db.collection('chats').doc(chatId).collection('messages').add({
+                    text: text,
+                    senderUid: currentUser.uid,
+                    senderEmail: currentUser.email,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    type: 'text'
+                });
+
+                // Update chat timestamp
+                await db.collection('chats').doc(chatId).update({
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                input.value = '';
+            } catch (error) {
+                showToast('Error sending message: ' + error.message, 'error');
+            }
+        }
+
+        // ==================== UI UTILITIES ====================
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgColor = 'bg-gray-800';
+            let icon = 'fa-info-circle';
+            
+            if (type === 'success') { bgColor = 'bg-green-500'; icon = 'fa-check-circle'; }
+            if (type === 'error') { bgColor = 'bg-red-500'; icon = 'fa-exclamation-triangle'; }
+            if (type === 'warning') { bgColor = 'bg-yellow-500'; icon = 'fa-exclamation-circle'; }
+
+            toast.className = `${bgColor} text-white px-4 py-3 rounded-full shadow-xl flex items-center space-x-2 text-sm font-medium transform transition-all duration-300 translate-y-[-100%] opacity-0`;
+            toast.innerHTML = `<i class="fas ${icon}"></i> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-[-100%]', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function openModal(content) {
+            const container = document.getElementById('modal-container');
+            container.innerHTML = `
+                <div class="bg-white w-full max-w-lg mx-auto sm:rounded-t-2xl rounded-t-2xl shadow-2xl ios-slide-up pointer-events-auto overflow-hidden" style="max-height: 90vh;">
+                    <div class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 mb-1 sm:hidden"></div>
+                    ${content}
+                </div>
+                <div class="fixed inset-0 bg-black/40 z-[-1]" onclick="closeModal()"></div>
+            `;
+            container.classList.remove('pointer-events-none');
+            
+            // Initialize any dropdowns in the modal
+            setTimeout(() => {
+                container.querySelectorAll('.custom-dropdown').forEach(dropdown => {
+                    const btn = dropdown.querySelector('.dropdown-btn');
+                    const options = dropdown.querySelector('.dropdown-options');
+                    if (btn && options) {
+                        initDropdownComponent(btn, options);
+                    }
+                });
+            }, 100);
+        }
+
+        function closeModal() {
+            const container = document.getElementById('modal-container');
+            container.innerHTML = '';
+            container.classList.add('pointer-events-none');
+        }
+
+        function showCustomAlert(title, message, confirmCallback) {
+            openModal(`
+                <div class="p-6 custom-alert">
+                    <h3 class="text-lg font-bold mb-2">${title}</h3>
+                    <p class="text-gray-600">${message}</p>
+                    <div class="alert-buttons">
+                        <button class="alert-btn cancel" onclick="closeModal()">Cancel</button>
+                        <button class="alert-btn confirm" onclick="closeModal(); ${confirmCallback.toString().replace(/"/g, '&quot;')}">Confirm</button>
+                    </div>
+                </div>
+            `);
+        }
+
+        // ==================== DROPDOWN UTILITIES ====================
+        function initDropdown(btnId, optionsId, onChange = null) {
+            const btn = document.getElementById(btnId);
+            const options = document.getElementById(optionsId);
+            
+            if (!btn || !options) return;
+            
+            initDropdownComponent(btn, options, onChange);
+        }
+
+        function initDropdownComponent(btn, options, onChange = null) {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                options.style.display = options.style.display === 'block' ? 'none' : 'block';
+            });
+
+            options.querySelectorAll('.dropdown-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    const value = option.getAttribute('data-value') || option.textContent;
+                    btn.textContent = option.textContent;
+                    options.style.display = 'none';
+                    
+                    if (onChange) {
+                        onChange(value);
+                    }
+                });
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!btn.contains(e.target) && !options.contains(e.target)) {
+                    options.style.display = 'none';
+                }
+            });
+        }
+
+        // ==================== DATE FORMATTING ====================
+        function formatDate(timestamp) {
+            if (!timestamp || !timestamp.toDate) return 'N/A';
+            
+            const date = timestamp.toDate();
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            if (diffDays < 7) return `${diffDays}d ago`;
+            
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+        }
+
+        function formatTime(timestamp) {
+            if (!timestamp || !timestamp.toDate) return '';
+            
+            const date = timestamp.toDate();
+            return date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+    </script>
+</body>
+</html>

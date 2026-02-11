@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Dashboard - Order Manager</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#1e293b',
+                            primary: '#3b82f6',
+                            accent: '#6366f1',
+                            danger: '#ef4444',
+                            success: '#22c55e'
+                        }
+                    },
+                    animation: {
+                        'slide-up': 'slideUp 0.3s ease-out forwards',
+                        'fade-in': 'fadeIn 0.2s ease-out forwards'
+                    },
+                    keyframes: {
+                        slideUp: {
+                            '0%': { transform: 'translateY(100%)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        
+        /* Custom UI Component Styles */
+        .custom-select-options { display: none; }
+        .custom-select.active .custom-select-options { display: block; animation: fadeIn 0.1s ease-out; }
+        .custom-select-arrow { transition: transform 0.2s; }
+        .custom-select.active .custom-select-arrow { transform: rotate(180deg); }
+    </style>
+</head>
+<body class="bg-gray-50 text-slate-800 h-screen flex overflow-hidden">
+
+    <aside class="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 h-full z-20">
+        <div class="p-6 border-b border-gray-100 flex items-center space-x-3">
+            <div class="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center text-white font-bold">A</div>
+            <h1 class="font-bold text-xl tracking-tight text-slate-900">AgentPanel</h1>
+        </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <button class="w-full flex items-center space-x-3 px-4 py-3 bg-brand-primary/10 text-brand-primary rounded-xl font-medium transition-colors">
+                <i class="fas fa-layer-group"></i> <span>Orders</span>
+            </button>
+            <button class="w-full flex items-center space-x-3 px-4 py-3 text-gray-500 hover:bg-gray-50 rounded-xl font-medium transition-colors">
+                <i class="fas fa-chart-pie"></i> <span>Analytics</span>
+            </button>
+            <button class="w-full flex items-center space-x-3 px-4 py-3 text-gray-500 hover:bg-gray-50 rounded-xl font-medium transition-colors">
+                <i class="fas fa-cog"></i> <span>Settings</span>
+            </button>
+        </nav>
+        <div class="p-4 border-t border-gray-100">
+            <div id="userInfo" class="text-sm font-medium text-gray-600 mb-2">Loading Agent...</div>
+            <button onclick="logout()" class="text-xs text-red-500 hover:underline">Log Out</button>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full relative">
+        
+        <header class="h-16 bg-white/80 backdrop-blur border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-10">
+            <h2 class="text-lg font-bold text-slate-800">My Orders</h2>
+            <button onclick="openEditor()" class="bg-brand-primary hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-lg shadow-blue-500/30 transition-all flex items-center">
+                <i class="fas fa-plus mr-2"></i> New Order
+            </button>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 relative">
+            <div id="loadingState" class="text-center py-20 text-gray-400 hidden">
+                <i class="fas fa-circle-notch fa-spin text-3xl mb-3"></i>
+                <p>Syncing orders...</p>
+            </div>
+            
+            <div id="ordersGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-24 md:pb-0">
+                </div>
+        </div>
+
+        <div class="md:hidden h-20 bg-white border-t border-gray-200 flex justify-around items-center px-2 absolute bottom-0 w-full z-10 pb-2">
+            <button class="flex flex-col items-center p-2 text-brand-primary"><i class="fas fa-layer-group text-xl mb-1"></i><span class="text-[10px] font-medium">Orders</span></button>
+            <button class="flex flex-col items-center p-2 text-gray-400"><i class="fas fa-chart-pie text-xl mb-1"></i><span class="text-[10px] font-medium">Stats</span></button>
+            <button class="flex flex-col items-center p-2 text-gray-400"><i class="fas fa-user text-xl mb-1"></i><span class="text-[10px] font-medium">Profile</span></button>
+        </div>
+    </main>
+
+    <div id="editorModal" class="fixed inset-0 z-50 hidden" role="dialog">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0" id="modalBackdrop" onclick="closeEditor()"></div>
+        
+        <div id="modalPanel" class="absolute bottom-0 md:top-0 md:bottom-auto md:my-auto md:inset-x-0 md:max-w-2xl bg-white rounded-t-3xl md:rounded-2xl shadow-2xl transform translate-y-full md:translate-y-10 transition-transform duration-300 flex flex-col max-h-[90vh] md:max-h-[85vh]">
+            
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-800" id="modalTitle">Create Order</h3>
+                <button onclick="closeEditor()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-5 custom-scroll">
+                <input type="hidden" id="orderId"> 
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Order Title</label>
+                    <input type="text" id="inpTitle" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-colors" placeholder="e.g. Website Redesign">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Client Email</label>
+                    <input type="email" id="inpEmail" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-primary transition-colors" placeholder="client@example.com">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Payment ($)</label>
+                        <input type="number" id="inpPayment" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-primary transition-colors" placeholder="0.00">
+                    </div>
+                    
+                    <div class="relative">
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Deadline</label>
+                        <div onclick="toggleDatePicker()" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm cursor-pointer flex justify-between items-center hover:bg-gray-100">
+                            <span id="dateDisplay" class="text-gray-600">Select Date</span>
+                            <i class="far fa-calendar text-gray-400"></i>
+                        </div>
+                        <input type="hidden" id="inpDeadline">
+                        
+                        <div id="customCalendar" class="absolute top-full mt-2 right-0 w-64 bg-white shadow-xl rounded-xl border border-gray-100 p-3 hidden z-50">
+                            <div class="flex justify-between items-center mb-2">
+                                <button onclick="changeMonth(-1)" class="p-1 hover:bg-gray-100 rounded"><i class="fas fa-chevron-left text-xs"></i></button>
+                                <span id="calMonthYear" class="text-xs font-bold"></span>
+                                <button onclick="changeMonth(1)" class="p-1 hover:bg-gray-100 rounded"><i class="fas fa-chevron-right text-xs"></i></button>
+                            </div>
+                            <div class="grid grid-cols-7 gap-1 text-center mb-1">
+                                <span class="text-[10px] text-gray-400">S</span><span class="text-[10px] text-gray-400">M</span><span class="text-[10px] text-gray-400">T</span><span class="text-[10px] text-gray-400">W</span><span class="text-[10px] text-gray-400">T</span><span class="text-[10px] text-gray-400">F</span><span class="text-[10px] text-gray-400">S</span>
+                            </div>
+                            <div id="calDays" class="grid grid-cols-7 gap-1 text-center text-sm"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative custom-select" id="statusSelect">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Status</label>
+                    <button onclick="toggleSelect('statusSelect')" class="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm flex justify-between items-center focus:outline-none hover:border-brand-primary">
+                        <span class="selected-value text-gray-700 font-medium">Open</span>
+                        <i class="fas fa-chevron-down text-gray-400 text-xs custom-select-arrow"></i>
+                    </button>
+                    <div class="custom-select-options absolute w-full bg-white shadow-xl rounded-xl mt-1 border border-gray-100 overflow-hidden z-40">
+                        <div onclick="selectOption('statusSelect', 'Open')" class="px-4 py-3 hover:bg-blue-50 text-sm cursor-pointer border-l-4 border-blue-500">Open</div>
+                        <div onclick="selectOption('statusSelect', 'In Progress')" class="px-4 py-3 hover:bg-orange-50 text-sm cursor-pointer border-l-4 border-orange-500">In Progress</div>
+                        <div onclick="selectOption('statusSelect', 'Finished')" class="px-4 py-3 hover:bg-green-50 text-sm cursor-pointer border-l-4 border-green-500">Finished</div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-3">Progress Stage</label>
+                    <div class="relative pt-1 px-1">
+                        <input type="range" id="inpProgress" min="1" max="4" step="1" value="1" oninput="updateProgressLabel(this.value)" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand-primary">
+                        <div class="flex justify-between text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-wider">
+                            <span>Start</span>
+                            <span>Review</span>
+                            <span>Process</span>
+                            <span>Done</span>
+                        </div>
+                        <div id="progressLabel" class="absolute -top-1 right-0 text-xs font-bold text-brand-primary">Stage 1/4</div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Details</label>
+                    <textarea id="inpDesc" rows="3" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-primary transition-colors"></textarea>
+                </div>
+            </div>
+
+            <div class="p-6 border-t border-gray-100 flex space-x-3">
+                <button onclick="closeEditor()" class="flex-1 py-3.5 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition">Cancel</button>
+                <button onclick="saveOrder()" class="flex-1 py-3.5 bg-brand-primary text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 hover:bg-blue-600 transition flex justify-center items-center">
+                    <span id="btnSaveText">Save Order</span>
+                    <i id="btnSaveIcon" class="fas fa-check ml-2"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="chatModal" class="fixed inset-0 z-[60] hidden" role="dialog">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0" id="chatBackdrop" onclick="closeChat()"></div>
+        
+        <div id="chatPanel" class="absolute bottom-0 md:top-0 md:bottom-auto md:my-auto md:inset-x-0 md:max-w-2xl bg-white rounded-t-3xl md:rounded-2xl shadow-2xl transform translate-y-full md:translate-y-10 transition-transform duration-300 flex flex-col h-[85vh]">
+            
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-3xl md:rounded-t-2xl">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-primary to-brand-accent text-white flex items-center justify-center font-bold">C</div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800" id="chatClientName">Client Name</h3>
+                        <p class="text-xs text-gray-500 truncate max-w-[150px]" id="chatOrderTitle">Order Title</p>
+                    </div>
+                </div>
+                <button onclick="closeChat()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+            </div>
+
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-white">
+                <div class="text-center text-gray-400 text-sm mt-10">Loading conversation...</div>
+            </div>
+
+            <div class="p-4 border-t border-gray-100 bg-white rounded-b-2xl">
+                <div class="flex items-end gap-2 bg-gray-50 p-2 rounded-2xl border border-gray-200">
+                    <textarea id="chatInput" rows="1" class="flex-1 bg-transparent border-0 focus:ring-0 text-sm max-h-24 py-2 resize-none" placeholder="Type a message..."></textarea>
+                    <button onclick="sendAgentMessage()" class="p-2 bg-brand-primary text-white rounded-xl shadow-md hover:bg-blue-600 transition-all active:scale-95 flex-none">
+                        <i class="fas fa-paper-plane text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed top-5 right-0 bg-gray-900 text-white px-6 py-3 rounded-lg shadow-2xl transform translate-x-full transition-transform duration-300 z-[70] flex items-center">
+        <i class="fas fa-envelope mr-3 text-brand-success"></i>
+        <div>
+            <h4 class="text-sm font-bold">Notification</h4>
+            <p class="text-xs text-gray-400" id="toastMsg">Action successful.</p>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBDeDc6pWhghXmGYg9QYQ3nVAGTpo1u5AM",
+            authDomain: "research-craft.firebaseapp.com",
+            projectId: "research-craft",
+            storageBucket: "research-craft.firebasestorage.app",
+            messagingSenderId: "284823836570",
+            appId: "1:284823836570:web:fb0d93cdf92368525d8c23",
+            measurementId: "G-6H5BS98612"
+        };
+        if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        const BREVO_KEY = "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"; 
+        
+        // --- 2. STATE ---
+        let currentAgent = null;
+        let selectedDate = new Date();
+        let isEditMode = false;
+        
+        // Chat State
+        let activeChatId = null;
+        let chatUnsubscribe = null;
+        
+        // --- 3. AUTH & INIT ---
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentAgent = user;
+                document.getElementById('userInfo').innerText = `Agent: ${user.email}`;
+                loadOrders();
+            } else {
+                auth.signInAnonymously().catch(alert);
+            }
+        });
+
+        // --- 4. LOAD ORDERS ---
+        function loadOrders() {
+            document.getElementById('loadingState').classList.remove('hidden');
+            db.collection('orders')
+              .where('agentId', '==', currentAgent.uid)
+              .onSnapshot(snapshot => {
+                  document.getElementById('loadingState').classList.add('hidden');
+                  const grid = document.getElementById('ordersGrid');
+                  grid.innerHTML = '';
+                  
+                  let orders = [];
+                  snapshot.forEach(doc => orders.push({id: doc.id, ...doc.data()}));
+                  
+                  const now = new Date();
+                  orders.sort((a, b) => {
+                      const dateA = new Date(a.deadline);
+                      const dateB = new Date(b.deadline);
+                      const aOverdue = dateA < now && a.status !== "Finished";
+                      const bOverdue = dateB < now && b.status !== "Finished";
+                      if (aOverdue && !bOverdue) return -1;
+                      if (!aOverdue && bOverdue) return 1;
+                      return b.createdAt - a.createdAt;
+                  });
+
+                  orders.forEach(order => {
+                      checkOverdueAndEmail(order);
+                      grid.innerHTML += createOrderCard(order);
+                  });
+              });
+        }
+
+        // --- 5. RENDER CARD (Updated with Chat Button) ---
+        function createOrderCard(data) {
+            const deadlineDate = new Date(data.deadline);
+            const now = new Date();
+            const isOverdue = deadlineDate < now && data.status !== 'Finished';
+            
+            const cardBorder = isOverdue ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-100';
+            const bgHeader = isOverdue ? 'bg-red-50' : 'bg-white';
+            const statusColors = { 'Open': 'bg-blue-100 text-blue-700', 'In Progress': 'bg-orange-100 text-orange-700', 'Finished': 'bg-green-100 text-green-700' };
+            const badgeClass = statusColors[data.status] || 'bg-gray-100';
+
+            return `
+            <div class="bg-white rounded-2xl shadow-sm border ${cardBorder} flex flex-col hover:shadow-md transition-shadow">
+                <div class="p-5 ${bgHeader} rounded-t-2xl border-b border-gray-100 flex justify-between items-start">
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            ${isOverdue ? '<i class="fas fa-exclamation-circle text-red-500 animate-pulse"></i>' : ''}
+                            <h3 class="font-bold text-gray-900">${data.title}</h3>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">${data.clientEmail}</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${badgeClass}">${data.status}</span>
+                </div>
+
+                <div class="p-5 flex-1 space-y-4">
+                    <div>
+                        <div class="flex justify-between text-xs font-bold text-gray-400 mb-1">
+                            <span>Progress</span>
+                            <span class="text-brand-primary">Stage ${data.currentStep}/4</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-2">
+                            <div class="bg-brand-primary h-2 rounded-full transition-all duration-500" style="width: ${(data.currentStep/4)*100}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div class="bg-gray-50 p-3 rounded-xl">
+                            <span class="block text-[10px] text-gray-400 uppercase font-bold">Deadline</span>
+                            <span class="font-semibold ${isOverdue ? 'text-red-600' : 'text-gray-700'}">${deadlineDate.toLocaleDateString()}</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-xl text-right">
+                            <span class="block text-[10px] text-gray-400 uppercase font-bold">Payment</span>
+                            <span class="font-semibold text-gray-700">$${data.payment}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 border-t border-gray-100 grid grid-cols-2 gap-3">
+                    <button onclick="openChat('${data.id}', '${data.clientEmail}', '${data.title}')" class="py-2 bg-brand-primary hover:bg-blue-600 text-white font-semibold rounded-lg text-sm transition-colors flex justify-center items-center shadow-sm">
+                        <i class="fas fa-comment-alt mr-2"></i> Message
+                    </button>
+                    <button onclick="openEditor('${data.id}')" class="py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 font-semibold rounded-lg text-sm transition-colors flex justify-center items-center">
+                        <i class="fas fa-edit mr-2"></i> Manage
+                    </button>
+                </div>
+            </div>
+            `;
+        }
+
+        // --- 6. CHAT LOGIC ---
+        function openChat(orderId, clientEmail, orderTitle) {
+            activeChatId = orderId;
+            document.getElementById('chatClientName').innerText = clientEmail;
+            document.getElementById('chatOrderTitle').innerText = orderTitle;
+            
+            // Open Modal
+            const modal = document.getElementById('chatModal');
+            const panel = document.getElementById('chatPanel');
+            const backdrop = document.getElementById('chatBackdrop');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0');
+                panel.classList.remove('translate-y-full', 'md:translate-y-10');
+            }, 10);
+
+            // Load Messages
+            const msgContainer = document.getElementById('chatMessages');
+            msgContainer.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-circle-notch fa-spin text-gray-300"></i></div>';
+            
+            if(chatUnsubscribe) chatUnsubscribe(); // Detach previous listener
+
+            chatUnsubscribe = db.collection('orders').doc(orderId).collection('messages')
+                .orderBy('createdAt', 'asc')
+                .onSnapshot(snapshot => {
+                    msgContainer.innerHTML = '';
+                    if(snapshot.empty) {
+                        msgContainer.innerHTML = '<div class="text-center text-xs text-gray-400 mt-10">Start the conversation...</div>';
+                    }
+                    snapshot.forEach(doc => {
+                        const msg = doc.data();
+                        const isMe = msg.senderRole === 'agent';
+                        msgContainer.innerHTML += renderMessage(msg.text, isMe, msg.createdAt);
+                    });
+                    // Scroll to bottom
+                    msgContainer.scrollTop = msgContainer.scrollHeight;
+                });
+        }
+
+        function closeChat() {
+            const modal = document.getElementById('chatModal');
+            const panel = document.getElementById('chatPanel');
+            const backdrop = document.getElementById('chatBackdrop');
+            
+            backdrop.classList.add('opacity-0');
+            panel.classList.add('translate-y-full', 'md:translate-y-10');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+            
+            activeChatId = null;
+            if(chatUnsubscribe) chatUnsubscribe();
+        }
+
+        async function sendAgentMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if(!text || !activeChatId) return;
+            
+            input.value = ''; // clear input
+            
+            try {
+                await db.collection('orders').doc(activeChatId).collection('messages').add({
+                    text: text,
+                    senderId: currentAgent.uid,
+                    senderRole: 'agent',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            } catch(e) {
+                console.error(e);
+                showToast("Failed to send message");
+            }
+        }
+
+        function renderMessage(text, isMe, timestamp) {
+            const align = isMe ? 'justify-end' : 'justify-start';
+            const bubble = isMe ? 'bg-brand-primary text-white rounded-br-none' : 'bg-gray-100 text-gray-800 rounded-bl-none';
+            const time = timestamp ? new Date(timestamp.seconds * 1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '...';
+            
+            return `
+            <div class="flex ${align} animate-fade-in">
+                <div class="max-w-[75%]">
+                    <div class="px-4 py-2 text-sm rounded-2xl ${bubble}">${text}</div>
+                    <p class="text-[10px] text-gray-400 mt-1 ${isMe?'text-right':''}">${time}</p>
+                </div>
+            </div>`;
+        }
+
+
+        // --- 7. EDITOR LOGIC (Unchanged but included) ---
+        function openEditor(orderId = null) {
+            const modal = document.getElementById('editorModal');
+            const panel = document.getElementById('modalPanel');
+            const backdrop = document.getElementById('modalBackdrop');
+            
+            isEditMode = !!orderId;
+            document.getElementById('modalTitle').innerText = isEditMode ? 'Edit Order' : 'Create New Order';
+            document.getElementById('btnSaveText').innerText = isEditMode ? 'Update Order' : 'Create Order';
+            document.getElementById('orderId').value = orderId || '';
+
+            if (isEditMode) {
+                db.collection('orders').doc(orderId).get().then(doc => {
+                    const data = doc.data();
+                    document.getElementById('inpTitle').value = data.title;
+                    document.getElementById('inpEmail').value = data.clientEmail;
+                    document.getElementById('inpPayment').value = data.payment;
+                    document.getElementById('inpDesc').value = data.description;
+                    document.getElementById('inpProgress').value = data.currentStep;
+                    updateProgressLabel(data.currentStep);
+                    document.querySelector('#statusSelect .selected-value').innerText = data.status;
+                    selectedDate = new Date(data.deadline);
+                    document.getElementById('dateDisplay').innerText = selectedDate.toDateString();
+                    document.getElementById('inpDeadline').value = data.deadline;
+                });
+            } else {
+                document.getElementById('inpTitle').value = '';
+                document.getElementById('inpEmail').value = '';
+                document.getElementById('inpPayment').value = '';
+                document.getElementById('inpDesc').value = '';
+                document.getElementById('inpProgress').value = 1;
+                updateProgressLabel(1);
+                document.querySelector('#statusSelect .selected-value').innerText = 'Open';
+                selectedDate = new Date();
+                document.getElementById('dateDisplay').innerText = 'Select Date';
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0');
+                panel.classList.remove('translate-y-full', 'md:translate-y-10');
+            }, 10);
+        }
+
+        function closeEditor() {
+            const modal = document.getElementById('editorModal');
+            const panel = document.getElementById('modalPanel');
+            const backdrop = document.getElementById('modalBackdrop');
+            backdrop.classList.add('opacity-0');
+            panel.classList.add('translate-y-full', 'md:translate-y-10');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        async function saveOrder() {
+            if (!currentAgent) return alert("Auth Error");
+            const btn = document.querySelector('#modalPanel button:last-child');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+            const orderId = document.getElementById('orderId').value;
+            const data = {
+                title: document.getElementById('inpTitle').value,
+                clientEmail: document.getElementById('inpEmail').value,
+                payment: document.getElementById('inpPayment').value,
+                deadline: document.getElementById('inpDeadline').value || selectedDate.toISOString().split('T')[0],
+                status: document.querySelector('#statusSelect .selected-value').innerText,
+                currentStep: parseInt(document.getElementById('inpProgress').value),
+                description: document.getElementById('inpDesc').value,
+                agentId: currentAgent.uid,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                if (isEditMode) {
+                    await db.collection('orders').doc(orderId).update(data);
+                    const emailBody = `<h3>Order Updated: ${data.title}</h3><p>Status: ${data.status}</p>`;
+                    sendEmail(`${data.clientEmail}`, `Update on Order ${data.title}`, emailBody);
+                    sendEmail(`${currentAgent.email}`, `You updated Order ${data.title}`, emailBody);
+                    showToast("Order updated & emails sent!");
+                } else {
+                    data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    data.orderId = Math.floor(1000 + Math.random() * 9000);
+                    data.overdueEmailSent = false;
+                    await db.collection('orders').add(data);
+                    const welcomeBody = `<h3>Order Received</h3><p>Thank you! We have started working on: <strong>${data.title}</strong>.</p>`;
+                    sendEmail(`${data.clientEmail}`, `Welcome! Order #${data.orderId}`, welcomeBody);
+                    showToast("Order created successfully!");
+                }
+                closeEditor();
+            } catch (err) {
+                console.error(err);
+                alert("Error saving order: " + err.message);
+            }
+            btn.innerHTML = originalText;
+        }
+
+        // --- 8. UTILS & HELPERS ---
+        function checkOverdueAndEmail(order) {
+            const deadline = new Date(order.deadline);
+            const now = new Date();
+            if (deadline < now && order.status !== 'Finished' && !order.overdueEmailSent) {
+                sendEmail(order.clientEmail, `Update: ${order.title}`, `<h3>We apologize for the delay</h3>`);
+                sendEmail(currentAgent.email, `URGENT: ${order.title}`, `<h3 style="color:red">IMMEDIATE ACTION</h3>`);
+                db.collection('orders').doc(order.id).update({ overdueEmailSent: true });
+            }
+        }
+
+        function sendEmail(toEmail, subject, htmlContent) {
+            fetch("https://api.brevo.com/v3/smtp/email", {
+                method: "POST",
+                headers: { "api-key": BREVO_KEY, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    sender: { email: "noreply.austek@gmail.com", name: "RESEARCH CONNECT" },
+                    to: [{ email: toEmail }],
+                    subject: subject,
+                    htmlContent: htmlContent
+                })
+            }).then(r => r.ok ? console.log("Email sent") : console.error("Email fail"));
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            t.classList.remove('translate-x-full');
+            setTimeout(() => t.classList.add('translate-x-full'), 3000);
+        }
+
+        function toggleSelect(id) { document.getElementById(id).classList.toggle('active'); }
+        function selectOption(parentId, value) {
+            const parent = document.getElementById(parentId);
+            parent.querySelector('.selected-value').innerText = value;
+            parent.classList.remove('active');
+        }
+        
+        // Date Picker
+        let currentCalMonth = new Date().getMonth();
+        let currentCalYear = new Date().getFullYear();
+        function toggleDatePicker() {
+            document.getElementById('customCalendar').classList.toggle('hidden');
+            renderCalendar();
+        }
+        function renderCalendar() {
+            const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+            document.getElementById('calMonthYear').innerText = `${monthNames[currentCalMonth]} ${currentCalYear}`;
+            const firstDay = new Date(currentCalYear, currentCalMonth, 1).getDay();
+            const daysInMonth = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
+            const daysContainer = document.getElementById('calDays');
+            daysContainer.innerHTML = '';
+            for(let i=0; i<firstDay; i++) daysContainer.innerHTML += `<div></div>`;
+            for(let i=1; i<=daysInMonth; i++) {
+                const dayEl = document.createElement('div');
+                const isSelected = selectedDate.getDate() === i && selectedDate.getMonth() === currentCalMonth && selectedDate.getFullYear() === currentCalYear;
+                dayEl.className = `p-1 rounded cursor-pointer text-xs font-medium ${isSelected ? 'bg-brand-primary text-white' : 'hover:bg-gray-100 text-gray-700'}`;
+                dayEl.innerText = i;
+                dayEl.onclick = () => {
+                    selectedDate = new Date(currentCalYear, currentCalMonth, i);
+                    document.getElementById('dateDisplay').innerText = selectedDate.toDateString();
+                    document.getElementById('inpDeadline').value = selectedDate.toISOString().split('T')[0];
+                    document.getElementById('customCalendar').classList.add('hidden');
+                };
+                daysContainer.appendChild(dayEl);
+            }
+        }
+        function changeMonth(dir) {
+            currentCalMonth += dir;
+            if(currentCalMonth > 11) { currentCalMonth = 0; currentCalYear++; }
+            if(currentCalMonth < 0) { currentCalMonth = 11; currentCalYear--; }
+            renderCalendar();
+        }
+        function updateProgressLabel(val) { document.getElementById('progressLabel').innerText = `Stage ${val}/4`; }
+        window.onclick = function(event) {
+            if (!event.target.closest('.custom-select')) document.querySelectorAll('.custom-select').forEach(el => el.classList.remove('active'));
+        }
+    </script>
+</body>
+</html>

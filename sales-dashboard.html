@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Research Connect | Sales Admin</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#eff6ff', 100: '#dbeafe', 600: '#2563eb', 700: '#1d4ed8', 900: '#1e3a8a' }
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+            *{
+            
+            outline:none;
+            border:none;
+            user-select:none;
+            -webkit-user-drag: none;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .fade-in { animation: fadeIn 0.2s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Chat Screen Transition */
+        .chat-enter { transform: translateX(100%); opacity: 0; }
+        .chat-enter-active { transform: translateX(0); opacity: 1; transition: all 0.3s ease-out; }
+        .chat-exit { transform: translateX(0); opacity: 1; }
+        .chat-exit-active { transform: translateX(100%); opacity: 0; transition: all 0.3s ease-in; }
+
+        /* Priority Button Selected States */
+        .btn-prio-high.selected { background-color: #fee2e2; border-color: #ef4444; color: #b91c1c; }
+        .btn-prio-med.selected { background-color: #ffedd5; border-color: #f97316; color: #c2410c; }
+        .btn-prio-low.selected { background-color: #dbeafe; border-color: #3b82f6; color: #1d4ed8; }
+
+        /* Calendar Styles */
+        .calendar-day:hover { background-color: #eff6ff; color: #2563eb; }
+        .calendar-day.selected { background-color: #2563eb; color: white; }
+        .calendar-day.empty { background-color: transparent; cursor: default; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-screen flex flex-col md:flex-row overflow-hidden">
+
+    <aside class="hidden md:flex flex-col w-64 bg-brand-900 text-white h-full z-30 shadow-xl shrink-0">
+        <div class="p-6 border-b border-white/10 flex items-center gap-3">
+            <div class="w-8 h-8 bg-white text-brand-900 rounded-lg flex items-center justify-center font-bold text-lg">R</div>
+            <h1 class="font-bold text-lg leading-tight">Research<br>Connect</h1>
+        </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <button onclick="switchTab('clients')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition" id="nav-clients"><i class="fas fa-users w-5"></i> <span>Clients</span></button>
+            <button onclick="switchTab('agents')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition" id="nav-agents"><i class="fas fa-user-tie w-5"></i> <span>Agents</span></button>
+            <button onclick="switchTab('orders')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition" id="nav-orders"><i class="fas fa-clipboard-list w-5"></i> <span>Orders</span></button>
+            <button onclick="switchTab('payments')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition" id="nav-payments"><i class="fas fa-file-invoice-inr w-5"></i> <span>Payments</span></button>
+        </nav>
+        <div class="p-4 border-t border-white/10">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-xs">SA</div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium truncate">Sales Admin</p>
+                    <button onclick="auth.signOut()" class="text-xs text-white/70 hover:text-white">Logout</button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <header id="mobileHeader" class="md:hidden h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 z-40 relative">
+        <span class="font-bold text-brand-900 text-lg">Research Connect</span>
+        <button onclick="toggleMobileSidebar()" class="text-slate-600 p-2"><i class="fas fa-bars text-xl"></i></button>
+    </header>
+
+    <div id="mobileSidebarBackdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden transition-opacity"></div>
+    <div id="mobileSidebar" class="fixed inset-y-0 left-0 w-64 bg-brand-900 text-white z-50 transform -translate-x-full transition-transform duration-300 md:hidden flex flex-col">
+        <div class="p-6 border-b border-white/10 font-bold text-xl">Menu</div>
+        <nav class="flex-1 p-4 space-y-2">
+            <button onclick="switchTab('clients'); toggleMobileSidebar()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10"><i class="fas fa-users"></i> Clients</button>
+            <button onclick="switchTab('agents'); toggleMobileSidebar()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10"><i class="fas fa-user-tie"></i> Agents</button>
+            <button onclick="switchTab('orders'); toggleMobileSidebar()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10"><i class="fas fa-clipboard-list"></i> Orders</button>
+            <button onclick="switchTab('payments'); toggleMobileSidebar()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10"><i class="fas fa-check-circle"></i> Payments</button>
+        </nav>
+        <div class="p-4"><button onclick="auth.signOut()" class="w-full py-2 bg-white/10 rounded text-sm">Logout</button></div>
+    </div>
+
+    <main class="flex-1 flex flex-col h-full relative overflow-hidden bg-slate-50">
+        
+        <div id="main-scroll-container" class="flex-1 overflow-y-auto p-4 md:p-8 custom-scroll pb-24 md:pb-8">
+            
+            <div id="view-clients" class="view-section hidden fade-in">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    <h2 class="text-2xl font-bold text-slate-800">Clients</h2>
+                    <div class="flex gap-2 w-full md:w-auto">
+                        <div class="relative w-full md:w-64">
+                            <i class="fas fa-search absolute left-3 top-3 text-gray-400 text-xs"></i>
+                            <input type="text" onkeyup="filterList('clientList', this.value)" placeholder="Search Name/Email..." class="pl-9 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm w-full outline-none focus:border-brand-600">
+                        </div>
+                        <button onclick="openUserModal('Client')" class="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-brand-700 whitespace-nowrap"><i class="fas fa-plus"></i> Add</button>
+                    </div>
+                </div>
+                <div id="clientList" class="grid grid-cols-1 lg:grid-cols-3 gap-4"></div>
+            </div>
+
+            <div id="view-agents" class="view-section hidden fade-in">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    <h2 class="text-2xl font-bold text-slate-800">Agents</h2>
+                    <div class="flex gap-2 w-full md:w-auto">
+                        <div class="relative w-full md:w-64">
+                            <i class="fas fa-search absolute left-3 top-3 text-gray-400 text-xs"></i>
+                            <input type="text" onkeyup="filterList('agentList', this.value)" placeholder="Search..." class="pl-9 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm w-full outline-none focus:border-brand-600">
+                        </div>
+                        <button onclick="openUserModal('Agent')" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-slate-900 whitespace-nowrap"><i class="fas fa-plus"></i> Add</button>
+                    </div>
+                </div>
+                <div id="agentList" class="grid grid-cols-1 lg:grid-cols-3 gap-4"></div>
+            </div>
+
+            <div id="view-orders" class="view-section hidden fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800">Orders</h2>
+                    <button onclick="openOrderModal()" class="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-brand-700"><i class="fas fa-plus"></i> Create Order</button>
+                </div>
+                <div id="orderList" class="space-y-4"></div>
+            </div>
+
+            <div id="view-payments" class="view-section hidden fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800">Payments</h2>
+                    <button onclick="openPaymentModal()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-emerald-700"><i class="fas fa-plus"></i> New Request</button>
+                </div>
+                <div id="paymentList" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
+            </div>
+
+        </div>
+
+        <div id="view-chat" class="hidden absolute inset-0 bg-white z-50 flex flex-col h-full w-full">
+            <div class="h-16 px-4 border-b border-slate-200 flex items-center justify-between bg-white shrink-0">
+                <div class="flex items-center gap-3">
+                    <button onclick="exitChatScreen()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-sm leading-tight" id="chatClientName">Client Name</h3>
+                        <p class="text-xs text-slate-500 truncate max-w-[200px]" id="chatOrderTitle">Order #1234</p>
+                    </div>
+                </div>
+                <div class="w-2 h-2 rounded-full bg-green-500"></div>
+            </div>
+            
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 custom-scroll">
+                </div>
+
+            <div class="p-3 border-t border-slate-200 bg-white pb-safe shrink-0">
+                <div class="flex gap-2 items-end">
+                    <div class="flex-1 bg-slate-100 rounded-2xl flex items-center px-4 py-2">
+                        <input type="text" id="chatInput" class="w-full bg-transparent outline-none text-sm max-h-24" placeholder="Type a message..." autocomplete="off">
+                    </div>
+                    <button onclick="sendSalesMessage()" class="w-10 h-10 rounded-full bg-brand-600 text-white flex items-center justify-center shadow-lg hover:bg-brand-700 transition-transform active:scale-95 shrink-0">
+                        <i class="fas fa-paper-plane text-sm"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <nav id="mobileNav" class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 flex justify-around items-center z-30 pb-safe transition-transform duration-300">
+        <button onclick="switchTab('clients')" class="nav-item-mobile flex flex-col items-center text-slate-400 p-2"><i class="fas fa-users text-lg"></i><span class="text-[10px]">Clients</span></button>
+        <button onclick="switchTab('agents')" class="nav-item-mobile flex flex-col items-center text-slate-400 p-2"><i class="fas fa-user-tie text-lg"></i><span class="text-[10px]">Agents</span></button>
+        <button onclick="switchTab('orders')" class="nav-item-mobile flex flex-col items-center text-brand-600 p-2"><i class="fas fa-clipboard-list text-lg"></i><span class="text-[10px]">Orders</span></button>
+        <button onclick="switchTab('payments')" class="nav-item-mobile flex flex-col items-center text-slate-400 p-2"><i class="fas fa-check-circle text-lg"></i><span class="text-[10px]">Paid</span></button>
+    </nav>
+
+    <div id="orderModal" class="fixed inset-0 z-[60] hidden" role="dialog">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('orderModal')"></div>
+        <div class="absolute bottom-0 md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-white w-full md:w-[500px] rounded-t-2xl md:rounded-2xl p-6 shadow-2xl max-h-[95vh] overflow-y-auto custom-scroll">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-slate-900" id="ordModalTitle">Order Details</h3>
+                <button onclick="closeModal('orderModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            
+            <div class="space-y-4">
+                <input type="hidden" id="ordId">
+                <input type="text" id="ordTitle" placeholder="Project Title" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-brand-600 font-bold">
+                
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-wider">Client Email</label>
+                    <input type="email" id="ordClientEmail" placeholder="client@example.com" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-brand-600 text-sm">
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-wider">Priority Level</label>
+                    <div class="grid grid-cols-3 gap-3 mt-1">
+                        <button type="button" onclick="setPriority('High')" id="prioHigh" class="btn-prio-high border border-slate-200 rounded-xl py-2 text-sm font-bold text-slate-400 hover:bg-red-50 transition-colors">High</button>
+                        <button type="button" onclick="setPriority('Medium')" id="prioMed" class="btn-prio-med border border-slate-200 rounded-xl py-2 text-sm font-bold text-slate-400 hover:bg-orange-50 transition-colors">Medium</button>
+                        <button type="button" onclick="setPriority('Low')" id="prioLow" class="btn-prio-low border border-slate-200 rounded-xl py-2 text-sm font-bold text-slate-400 hover:bg-blue-50 transition-colors">Low</button>
+                    </div>
+                    <input type="hidden" id="ordPriority" value="Medium">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-wider">Price (₹)</label>
+                        <input type="number" id="ordPrice" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none text-sm font-mono">
+                    </div>
+                    
+                    <div class="relative">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-wider">Deadline</label>
+                        <div class="relative">
+                            <input type="text" id="ordDateDisplay" readonly onclick="toggleCalendar()" placeholder="Select Date" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none text-sm cursor-pointer hover:border-brand-400">
+                            <i class="fas fa-calendar-alt absolute right-4 top-3.5 text-slate-400 pointer-events-none"></i>
+                        </div>
+                        <input type="hidden" id="ordDateValue">
+                        
+                        <div id="customCalendar" class="hidden absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 shadow-xl rounded-xl z-50 p-3 w-[280px]">
+                            <div class="flex justify-between items-center mb-2">
+                                <button onclick="changeMonth(-1)" class="p-1 hover:bg-slate-100 rounded text-slate-500"><i class="fas fa-chevron-left"></i></button>
+                                <span id="calMonthYear" class="font-bold text-sm text-slate-700">Month 2024</span>
+                                <button onclick="changeMonth(1)" class="p-1 hover:bg-slate-100 rounded text-slate-500"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                            <div class="grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-400 mb-1">
+                                <div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
+                            </div>
+                            <div id="calGrid" class="grid grid-cols-7 gap-1 text-center text-sm"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-wider">Details</label>
+                    <textarea id="ordDesc" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none resize-none text-sm"></textarea>
+                </div>
+                
+                <button onclick="submitSaveOrder()" class="w-full bg-brand-600 text-white font-bold py-3 rounded-xl hover:bg-brand-700 shadow-lg shadow-brand-600/30 transition-transform active:scale-95">Save Order</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="userModal" class="fixed inset-0 z-[60] hidden" role="dialog"><div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('userModal')"></div><div class="absolute bottom-0 md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-white w-full md:w-[450px] rounded-t-2xl md:rounded-2xl p-6 shadow-2xl transition-all"><h3 class="text-xl font-bold mb-4 text-slate-900" id="userModalTitle">Add User</h3><div class="space-y-4"><input type="text" id="userName" placeholder="Full Name" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none"><input type="email" id="userEmail" placeholder="Email Address" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none"><input type="hidden" id="userRole"><button onclick="submitCreateUser()" id="btnCreateUser" class="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl hover:bg-slate-800 transition">Create & Email Credentials</button></div></div></div>
+    
+    <div id="assignModal" class="fixed inset-0 z-[70] hidden" role="dialog"><div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('assignModal')"></div><div class="absolute bottom-0 md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-white w-full md:w-[400px] rounded-t-2xl md:rounded-2xl p-6 shadow-2xl"><h3 class="text-xl font-bold mb-4 text-slate-900">Assign Agent</h3><input type="hidden" id="assignOrderId"><button onclick="executeAutoAssign()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3.5 rounded-xl mb-4 flex items-center justify-center"><i class="fas fa-random mr-2 text-slate-500"></i> Auto-Assign Randomly</button><div class="flex items-center gap-3 mb-4"><div class="h-px bg-slate-200 flex-1"></div><span class="text-xs text-slate-400 font-bold">OR BY EMAIL</span><div class="h-px bg-slate-200 flex-1"></div></div><div class="space-y-3"><input type="email" id="assignEmail" placeholder="agent@email.com" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none"><button onclick="executeEmailAssign()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-xl">Assign Specific Agent</button></div></div></div>
+
+    <div id="filesModal" class="fixed inset-0 z-[70] hidden" role="dialog"><div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('filesModal')"></div><div class="absolute bottom-0 md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-white w-full md:w-[500px] rounded-t-2xl md:rounded-2xl p-6 shadow-2xl max-h-[80vh] flex flex-col"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold">Project Files</h3><button onclick="closeModal('filesModal')" class="text-slate-400"><i class="fas fa-times"></i></button></div><div id="filesContainer" class="flex-1 overflow-y-auto custom-scroll space-y-3"></div></div></div>
+
+   <div id="paymentModal" class="fixed inset-0 z-[60] hidden" role="dialog">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('paymentModal')"></div>
+    <div class="absolute bottom-0 md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-white w-full md:w-[450px] rounded-t-2xl md:rounded-2xl p-6 shadow-2xl">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-slate-900" id="payModalTitle">Request Payment</h3>
+            <button onclick="closeModal('paymentModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="space-y-4">
+            <input type="hidden" id="payId"> 
+            <input type="hidden" id="payOrderId">
+            
+            <div>
+                <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Title / Service</label>
+                <input type="text" id="payOrderTitle" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-emerald-500">
+            </div>
+
+            <div>
+                <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Client Email</label>
+                <input type="email" id="payClientEmail" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500">
+            </div>
+
+            <div>
+                <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Amount (₹)</label>
+                <input type="number" id="payAmount" placeholder="0.00" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500">
+            </div>
+
+            <button onclick="submitSavePayment()" class="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-500/30 transition-transform active:scale-95">Save Payment Request</button>
+        </div>
+    </div>
+</div>
+
+
+    <div id="deleteModal" class="fixed inset-0 z-[90] hidden flex items-center justify-center p-4"><div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('deleteModal')"></div><div class="bg-white rounded-2xl shadow-2xl p-6 relative z-10 w-full max-w-sm text-center"><div class="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3 text-xl"><i class="fas fa-trash-alt"></i></div><h3 class="text-lg font-bold">Confirm Deletion</h3><p class="text-sm text-slate-500 mb-6">Are you sure? This cannot be undone.</p><div class="grid grid-cols-2 gap-3"><button onclick="closeModal('deleteModal')" class="py-2.5 bg-slate-100 rounded-xl font-bold text-slate-600">Cancel</button><button id="btnConfirmDelete" class="py-2.5 bg-red-500 text-white rounded-xl font-bold shadow-lg shadow-red-500/30">Delete</button></div></div></div>
+
+    <div id="toast" class="fixed top-5 right-5 z-[100] transform translate-x-[150%] transition-transform duration-300">
+        <div class="bg-slate-900 text-white px-6 py-3 rounded-xl shadow-xl flex items-center gap-3 border border-slate-700">
+            <div id="toastIcon" class="w-2 h-2 rounded-full bg-green-400"></div>
+            <span id="toastMsg" class="text-sm font-medium">Notification</span>
+        </div>
+    </div>
+<div id="captchaModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"></div>
+    <div class="bg-white rounded-2xl shadow-2xl p-8 relative z-10 w-full max-w-sm text-center transform transition-all scale-100">
+        <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+            <i class="fas fa-shield-alt"></i>
+        </div>
+        <h3 class="text-xl font-bold text-slate-900">Security Check</h3>
+        <p class="text-sm text-slate-500 mb-6">To confirm this transaction, please type the code below:</p>
+        
+        <div class="bg-slate-100 border border-slate-200 rounded-xl p-4 mb-4 select-none relative overflow-hidden">
+            <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(#444 1px, transparent 1px); background-size: 5px 5px;"></div>
+            <span id="captchaDisplay" class="font-mono text-3xl font-black tracking-[0.5em] text-slate-800 relative z-10" style="text-shadow: 2px 2px 0px rgba(0,0,0,0.1);">ABCD</span>
+        </div>
+
+        <input type="text" id="captchaInput" onkeyup="validateCaptcha()" placeholder="Enter Code" class="w-full text-center bg-white border-2 border-slate-200 rounded-xl px-4 py-3 text-lg font-bold outline-none focus:border-blue-500 uppercase transition-colors mb-4">
+        
+        <div class="grid grid-cols-2 gap-3">
+            <button onclick="closeModal('captchaModal')" class="py-3 bg-slate-100 rounded-xl font-bold text-slate-600 hover:bg-slate-200">Cancel</button>
+            <button id="btnCaptchaConfirm" onclick="executeCaptchaAction()" disabled class="py-3 bg-blue-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<div id="paymentModal" class="fixed inset-0 z-[60] hidden" role="dialog">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('paymentModal')"></div>
+    <div class="absolute bottom-0 md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-white w-full md:w-[450px] rounded-t-2xl md:rounded-2xl p-6 shadow-2xl">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-slate-900" id="payModalTitle">Request Payment</h3>
+            <button onclick="closeModal('paymentModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="space-y-4">
+            <input type="hidden" id="payId"> <input type="hidden" id="payOrderId">
+            
+            <div>
+                <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Title / Service</label>
+                <input type="text" id="payOrderTitle" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-emerald-500">
+            </div>
+
+            <div>
+                <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Client Email</label>
+                <input type="email" id="payClientEmail" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500">
+            </div>
+
+            <div>
+                <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Amount (₹)</label>
+                <input type="number" id="payAmount" placeholder="0.00" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500">
+            </div>
+
+            <button onclick="submitSavePayment()" class="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-500/30 transition-transform active:scale-95">Save Payment Request</button>
+        </div>
+    </div>
+</div>
+<script src="dih.js"></script>
+
+
+</body>
+</html>

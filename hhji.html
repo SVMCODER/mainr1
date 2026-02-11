@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Dashboard | Research Craft</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); }
+        
+        /* Status Badges */
+        .status-open { @apply bg-blue-100 text-blue-700; }
+        .status-progress { @apply bg-purple-100 text-purple-700; }
+        .status-review { @apply bg-yellow-100 text-yellow-800; }
+        .status-completed { @apply bg-green-100 text-green-700; }
+        .status-cancelled { @apply bg-red-100 text-red-700; }
+
+        /* Animation */
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="text-slate-800 h-screen flex overflow-hidden">
+
+    <aside class="hidden md:flex w-72 bg-slate-900 text-white flex-col fixed h-full z-30 shadow-2xl">
+        <div class="h-20 flex items-center px-6 border-b border-slate-700 bg-slate-800">
+            <div class="flex flex-col">
+                <span class="font-bold text-xl tracking-tight text-blue-400">Research Craft</span>
+                [span_2](start_span)<span class="text-xs text-slate-400 uppercase tracking-wider">Multi-Org Portal[span_2](end_span)</span>
+            </div>
+        </div>
+
+        <div class="px-6 py-6 border-b border-slate-700 bg-slate-800/50">
+            <p class="text-xs text-slate-400 uppercase mb-1">Current User</p>
+            <h2 class="font-bold text-white text-lg truncate" id="sidebar-user-name">Loading...</h2>
+            <div class="flex items-center gap-2 mt-2">
+                <span id="sidebar-role" class="px-2 py-0.5 rounded text-xs font-bold bg-blue-600 text-white"></span>
+                <span id="sidebar-org" class="px-2 py-0.5 rounded text-xs font-bold bg-slate-600 text-slate-200"></span>
+            </div>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-6 px-3 space-y-1">
+            <button onclick="switchView('dashboard')" class="nav-btn w-full flex items-center px-4 py-3 text-sm font-medium text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition">
+                <i class="fa-solid fa-chart-line w-8"></i> Dashboard
+            </button>
+            <button onclick="switchView('orders')" class="nav-btn w-full flex items-center px-4 py-3 text-sm font-medium text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition">
+                <i class="fa-solid fa-folder-tree w-8"></i> Orders
+            </button>
+            <button onclick="switchView('inbox')" class="nav-btn w-full flex items-center px-4 py-3 text-sm font-medium text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition">
+                <i class="fa-solid fa-inbox w-8"></i> Inbox (Sales)
+            </button>
+            <button onclick="switchView('payments')" class="nav-btn w-full flex items-center px-4 py-3 text-sm font-medium text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition">
+                <i class="fa-solid fa-file-invoice-dollar w-8"></i> Payments
+            </button>
+            <button onclick="switchView('support')" class="nav-btn w-full flex items-center px-4 py-3 text-sm font-medium text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition">
+                <i class="fa-solid fa-headset w-8"></i> Support Tickets
+            </button>
+            <button onclick="switchView('rewards')" class="nav-btn w-full flex items-center px-4 py-3 text-sm font-medium text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition">
+                [span_3](start_span)<i class="fa-solid fa-gift w-8"></i> Rewards[span_3](end_span)
+            </button>
+        </nav>
+
+        <div class="p-4 bg-slate-800 border-t border-slate-700">
+            <p class="text-xs text-slate-500 mb-2">Simulate Role:</p>
+            <select id="role-switcher" onchange="changeRole(this.value)" class="w-full bg-slate-900 text-xs text-white border border-slate-600 rounded p-1">
+                <option value="Client">Client</option>
+                <option value="Sales">Sales Team</option>
+                <option value="Agent">Agent (Researcher)</option>
+                <option value="Support">Support Team</option>
+            </select>
+        </div>
+    </aside>
+
+    <main class="flex-1 md:ml-72 h-full overflow-y-auto relative scroll-smooth bg-slate-50">
+        
+        <header class="bg-white border-b border-slate-200 h-16 sticky top-0 z-20 px-6 flex justify-between items-center shadow-sm">
+            <div class="md:hidden font-bold text-blue-600">Research Craft</div>
+            <div class="flex-1"></div> <div class="flex items-center gap-4">
+                <div class="relative">
+                    <button class="text-slate-500 hover:text-blue-600 relative">
+                        <i class="fa-solid fa-bell text-xl"></i>
+                        <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                    </button>
+                </div>
+                <div class="text-right hidden sm:block">
+                    <p class="text-xs text-slate-400">Organization ID</p>
+                    [span_4](start_span)<p class="text-sm font-mono font-bold text-slate-700">ORG-8821[span_4](end_span)</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="p-6 max-w-7xl mx-auto space-y-6" id="app-container">
+            </div>
+        
+        <div class="h-20 md:hidden"></div> </main>
+
+    <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-slate-200 h-16 flex justify-around items-center z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+        <button onclick="switchView('dashboard')" class="flex flex-col items-center text-slate-400 hover:text-blue-600 text-[10px] gap-1"><i class="fa-solid fa-chart-line text-xl"></i><span>Home</span></button>
+        <button onclick="switchView('orders')" class="flex flex-col items-center text-slate-400 hover:text-blue-600 text-[10px] gap-1"><i class="fa-solid fa-folder-tree text-xl"></i><span>Orders</span></button>
+        <button onclick="switchView('inbox')" class="flex flex-col items-center text-slate-400 hover:text-blue-600 text-[10px] gap-1"><i class="fa-solid fa-inbox text-xl"></i><span>Inbox</span></button>
+        <button onclick="switchView('payments')" class="flex flex-col items-center text-slate-400 hover:text-blue-600 text-[10px] gap-1"><i class="fa-solid fa-file-invoice-dollar text-xl"></i><span>Pay</span></button>
+        <button onclick="switchView('support')" class="flex flex-col items-center text-slate-400 hover:text-blue-600 text-[10px] gap-1"><i class="fa-solid fa-headset text-xl"></i><span>Help</span></button>
+    </nav>
+
+    <div id="order-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeModal('order-modal')"></div>
+        <div class="absolute inset-y-0 right-0 w-full max-w-4xl bg-white shadow-2xl flex flex-col transform transition-transform duration-300 translate-x-full" id="order-panel">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div>
+                    <h3 class="text-xl font-bold text-slate-800" id="om-title">Order #...</h3>
+                    <p class="text-xs text-slate-500" id="om-meta">ID: ...</p>
+                </div>
+                <button onclick="closeModal('order-modal')" class="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="flex border-b border-slate-200 px-6 space-x-6 text-sm font-medium bg-white sticky top-0">
+                <button onclick="switchModalTab('overview')" class="modal-tab-btn active py-3 border-b-2 border-blue-600 text-blue-600" data-tab="overview">Overview</button>
+                [span_5](start_span)<button onclick="switchModalTab('files')" class="modal-tab-btn py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700" data-tab="files">Files[span_5](end_span)</button>
+                [span_6](start_span)<button onclick="switchModalTab('payments')" class="modal-tab-btn py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700" data-tab="payments">Payments[span_6](end_span)</button>
+                [span_7](start_span)<button onclick="switchModalTab('chat')" class="modal-tab-btn py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700" data-tab="chat">Discussion[span_7](end_span)</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6 bg-slate-50" id="om-content">
+                </div>
+        </div>
+    </div>
+
+    <div id="qr-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-md" onclick="closeModal('qr-modal')"></div>
+        <div class="bg-white rounded-2xl p-8 max-w-sm w-full relative z-10 text-center shadow-2xl">
+            <h3 class="text-lg font-bold mb-1">Scan to Pay</h3>
+            <p class="text-sm text-slate-500 mb-4" id="qr-amount">Amount: $0.00</p>
+            
+            <div class="bg-white p-4 border-2 border-slate-800 rounded-xl inline-block mb-4">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=researchcraft@okicici" alt="QR Code">
+            </div>
+            
+            <div class="bg-slate-100 p-3 rounded-lg mb-6 text-left">
+                <p class="text-xs text-slate-500 uppercase font-bold">Details</p>
+                <p class="text-sm font-mono truncate" id="qr-upi">UPI: researchcraft@bank</p>
+                <p class="text-sm font-mono truncate" id="qr-txid">Ref: TX-...</p>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="closeModal('qr-modal')" class="flex-1 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium">Cancel</button>
+                <button onclick="markPaidByClient()" class="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium shadow-lg hover:bg-blue-700">I Have Paid</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ticket-auth-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-slate-900/80" onclick="closeModal('ticket-auth-modal')"></div>
+        <div class="bg-white rounded-xl p-6 max-w-md w-full relative z-10">
+            <h3 class="font-bold text-lg mb-2"><i class="fa-solid fa-lock text-slate-400 mr-2"></i>Secure Access</h3>
+            <p class="text-sm text-slate-600 mb-4">This ticket is protected. Please enter the Access Key to join the multi-party chat.</p>
+            <input type="password" id="ticket-key-input" class="w-full border border-slate-300 rounded-lg p-2.5 mb-4" placeholder="Enter Access Key">
+            <button onclick="authenticateTicket()" class="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium">Unlock Ticket</button>
+        </div>
+    </div>
+
+    <script>
+        // --- MOCK DATA STORE (Simulating Firebase/Supabase) ---
+        const currentUser = {
+            id: "USR-001",
+            name: "Dr. Alex Mercer",
+            role: "Client", // Default - changed via dropdown
+            orgId: "ORG-8821"
+        };
+
+        const db = {
+            orders: [
+                {
+                    id: "ORD-9921",
+                    title: "Bio-Polymer Analysis Phase 1",
+                    status: "In Progress",
+                    deadline: "2023-11-15", // Client can edit
+                    agent: { name: "Agent Smith", id: "AGT-007" },
+                    progress: 45,
+                    description: "Detailed analysis of polymer chains under high heat.",
+                    files: [
+                        { name: "Brief.pdf", uploader: "Client", date: "2023-10-01 10:30 AM", size: "2.4MB" },
+                        { name: "Draft_v1.docx", uploader: "Agent Smith", date: "2023-10-05 04:15 PM", size: "1.1MB" }
+                    ],
+                    payments: [
+                        { id: "PAY-101", title: "Initial Deposit", amount: 500, status: "Paid", date: "2023-10-01" },
+                        { id: "PAY-102", title: "Phase 1 Completion", amount: 750, status: "Pending", date: "2023-10-06" }
+                    ],
+                    chat: [
+                        { sender: "Sales Team", msg: "Order created based on our discussion.", time: "Oct 1, 09:00 AM" },
+                        { sender: "Agent Smith", msg: "I have started the preliminary research.", time: "Oct 2, 11:00 AM" }
+                    ]
+                }
+            ],
+            tickets: [
+                {
+                    id: "TKT-554",
+                    subject: "Issue with file format",
+                    status: "Open",
+                    accessKey: "1234",
+                    supportAgent: "Support_01",
+                    members: ["Dr. Alex Mercer", "Support_01"],
+                    rating: null,
+                    msgs: [
+                        { sender: "Dr. Alex Mercer", text: "I cannot open the .dat file.", time: "10:00 AM" }
+                    ]
+                }
+            ],
+            salesInbox: [
+                {
+                    id: "LEAD-001",
+                    clientName: "Dr. Alex Mercer",
+                    status: "Active",
+                    msgs: [
+                        { sender: "Sales", text: "Hello! How can we help you with your research today?", time: "09:00 AM" },
+                        { sender: "Client", text: "I need a quote for a bio-chemistry paper.", time: "09:05 AM" }
+                    ]
+                }
+            ]
+        };
+
+        // --- CORE FUNCTIONS ---
+
+        function init() {
+            updateUserUI();
+            switchView('dashboard');
+        }
+
+        function changeRole(role) {
+            currentUser.role = role;
+            updateUserUI();
+            switchView('dashboard'); // Refresh view
+            
+            // Notification toast
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-5 right-5 bg-slate-800 text-white px-4 py-2 rounded shadow-lg z-50 fade-in';
+            toast.innerHTML = `<i class="fa-solid fa-user-tag mr-2"></i> Switched to ${role}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+
+        function updateUserUI() {
+            document.getElementById('sidebar-user-name').innerText = currentUser.name;
+            document.getElementById('sidebar-role').innerText = currentUser.role;
+            document.getElementById('sidebar-org').innerText = currentUser.orgId;
+        }
+
+        function switchView(viewName) {
+            const container = document.getElementById('app-container');
+            container.innerHTML = '<div class="flex justify-center p-10"><i class="fa-solid fa-circle-notch fa-spin text-4xl text-blue-200"></i></div>';
+            
+            setTimeout(() => {
+                if (viewName === 'dashboard') renderDashboard(container);
+                else if (viewName === 'orders') renderOrders(container);
+                else if (viewName === 'inbox') renderInbox(container);
+                else if (viewName === 'payments') renderPaymentsPage(container);
+                else if (viewName === 'support') renderSupport(container);
+                else if (viewName === 'rewards') renderRewards(container);
+            }, 200);
+        }
+
+        // --- RENDERERS ---
+
+        function renderDashboard(container) {
+          container = document.getElementById("app-container")
+            const isClient = currentUser.role === 'Client';
+            
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <p class="text-xs text-slate-500 uppercase font-bold mb-2">Active Orders</p>
+                        <h3 class="text-3xl font-bold text-slate-800">${db.orders.length}</h3>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <p class="text-xs text-slate-500 uppercase font-bold mb-2">Pending Payments</p>
+                        <h3 class="text-3xl font-bold text-slate-800">$750.00</h3>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <p class="text-xs text-slate-500 uppercase font-bold mb-2">Support Tickets</p>
+                        <h3 class="text-3xl font-bold text-slate-800">${db.tickets.filter(t => t.status === 'Open').length}</h3>
+                    </div>
+                    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 rounded-2xl shadow-lg text-white relative overflow-hidden">
+                        <div class="relative z-10">
+                            [span_8](start_span)<p class="text-xs text-blue-100 uppercase font-bold mb-2">Referral Rewards[span_8](end_span)</p>
+                            <h3 class="text-3xl font-bold">$150.00</h3>
+                            <p class="text-xs text-blue-200 mt-1">Available to redeem</p>
+                        </div>
+                        <i class="fa-solid fa-gift absolute -bottom-4 -right-4 text-8xl text-white opacity-10"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 p-6">
+                    [span_9](start_span)<h3 class="font-bold text-lg mb-4">Recent Activity Audit Log[span_9](end_span)</h3>
+                    <ul class="space-y-4">
+                        <li class="flex gap-4 items-start">
+                            <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 text-xs"><i class="fa-solid fa-file-arrow-up"></i></div>
+                            <div>
+                                <p class="text-sm text-slate-800"><span class="font-bold">Agent Smith</span> uploaded a file to Order #ORD-9921</p>
+                                <p class="text-xs text-slate-400">Today, 10:30 AM</p>
+                            </div>
+                        </li>
+                        <li class="flex gap-4 items-start">
+                            <div class="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600 text-xs"><i class="fa-solid fa-money-bill"></i></div>
+                            <div>
+                                <p class="text-sm text-slate-800">Payment of <span class="font-bold">$500.00</span> confirmed</p>
+                                <p class="text-xs text-slate-400">Yesterday, 04:15 PM</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        function renderOrders(container) {
+            let html = `
+                <div class="flex justify-between items-center mb-6">
+                    [span_10](start_span)<h2 class="text-2xl font-bold">Orders Management[span_10](end_span)</h2>
+                    ${currentUser.role === 'Sales' ? '<button class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 shadow-md"><i class="fa-solid fa-plus mr-2"></i>Create Order</button>' : ''}
+                </div>
+                <div class="grid gap-6">
+            `;
+
+            db.orders.forEach(order => {
+                html += `
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition cursor-pointer" onclick="openOrderModal('${order.id}')">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-xs font-mono text-slate-400 bg-slate-100 px-1 rounded">${order.id}</span>
+                                    ${currentUser.role === 'Client' ? `<span class="text-xs text-red-500 bg-red-50 px-2 py-0.5 rounded border border-red-100"><i class="fa-regular fa-clock mr-1"></i>Due: ${order.deadline}</span>` : ''}
+                                </div>
+                                <h3 class="font-bold text-lg text-slate-800">${order.title}</h3>
+                            </div>
+                            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase status-${order.status === 'In Progress' ? 'progress' : 'open'}">${order.status}</span>
+                        </div>
+                        
+                        <div class="w-full bg-slate-100 rounded-full h-2 mb-4">
+                            <div class="bg-blue-600 h-2 rounded-full" style="width: ${order.progress}%"></div>
+                        </div>
+
+                        <div class="flex justify-between items-center text-sm text-slate-500">
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold">AS</div>
+                                <span>${order.agent.name}</span>
+                            </div>
+                            <span><i class="fa-solid fa-paperclip mr-1"></i> ${order.files.length} Files</span>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        [span_11](start_span)// --- INBOX (SALES & LEAD CAPTURE[span_11](end_span)) ---
+        function renderInbox(container) {
+            // Logic: Clients see chat with Sales. Sales see list of Leads.
+            if(currentUser.role === 'Sales') {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl border border-slate-200 h-[600px] flex overflow-hidden">
+                        <div class="w-1/3 border-r border-slate-200 bg-slate-50">
+                            [span_12](start_span)<div class="p-4 border-b border-slate-200 font-bold">CRM Leads[span_12](end_span)</div>
+                            <div class="p-3 hover:bg-blue-50 cursor-pointer transition border-l-4 border-blue-600 bg-white">
+                                <p class="font-bold text-sm">Dr. Alex Mercer</p>
+                                <p class="text-xs text-slate-500 truncate">I need a quote for a bio...</p>
+                            </div>
+                        </div>
+                        <div class="flex-1 flex flex-col">
+                            <div class="p-4 border-b border-slate-200 flex justify-between items-center bg-white">
+                                <span class="font-bold">Dr. Alex Mercer</span>
+                                <button class="bg-green-600 text-white text-xs px-3 py-1.5 rounded hover:bg-green-700 shadow-sm" onclick="alert('Converts CRM Lead to Order Object')">
+                                    <i class="fa-solid fa-check mr-1"></i> Convert to Order
+                                </button>
+                            </div>
+                            <div class="flex-1 bg-slate-50 p-4 space-y-4 overflow-y-auto">
+                                ${db.salesInbox[0].msgs.map(m => `
+                                    <div class="flex flex-col ${m.sender === 'Sales' ? 'items-end' : 'items-start'}">
+                                        <div class="max-w-[80%] p-3 rounded-lg text-sm ${m.sender === 'Sales' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white border border-slate-200 rounded-bl-none'}">
+                                            ${m.text}
+                                        </div>
+                                        <span class="text-[10px] text-slate-400 mt-1">${m.time}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="p-4 bg-white border-t border-slate-200 flex gap-2">
+                                <input type="text" placeholder="Reply..." class="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm">
+                                <button class="bg-slate-800 text-white px-4 rounded-lg"><i class="fa-solid fa-paper-plane"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `<div class="text-center p-10"><h3 class="font-bold">Contact Sales</h3><p>Chat interface to Sales Team...</p></div>`;
+            }
+        }
+
+        // --- ORDER MODAL LOGIC ---
+        function openOrderModal(id) {
+            const order = db.orders.find(o => o.id === id);
+            document.getElementById('om-title').innerText = order.title;
+            document.getElementById('om-meta').innerText = `ID: ${order.id} • Status: ${order.status}`;
+            
+            // Default tab: Overview
+            renderModalContent(order, 'overview');
+            
+            document.getElementById('order-modal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('order-panel').classList.remove('translate-x-full'), 10);
+        }
+
+        function switchModalTab(tab) {
+            document.querySelectorAll('.modal-tab-btn').forEach(b => {
+                if(b.dataset.tab === tab) b.classList.add('active', 'border-blue-600', 'text-blue-600');
+                else b.classList.remove('active', 'border-blue-600', 'text-blue-600');
+                b.classList.add('border-transparent'); // Reset
+            });
+            const order = db.orders[0]; // Simplified for demo
+            renderModalContent(order, tab);
+        }
+
+        function renderModalContent(order, tab) {
+            const container = document.getElementById('om-content');
+            
+            if(tab === 'overview') {
+                container.innerHTML = `
+                    <div class="grid grid-cols-3 gap-6">
+                        <div class="col-span-2 space-y-6">
+                            <div class="bg-white p-4 rounded-xl border border-slate-200">
+                                <h4 class="font-bold mb-2">Description</h4>
+                                <p class="text-sm text-slate-600">${order.description}</p>
+                            </div>
+                            ${currentUser.role === 'Client' ? `
+                            <div class="bg-white p-4 rounded-xl border border-slate-200">
+                                <h4 class="font-bold mb-2">Client Deadline Control</h4>
+                                <input type="date" value="${order.deadline}" class="border border-slate-300 rounded px-2 py-1 text-sm">
+                                <button class="ml-2 text-xs bg-blue-600 text-white px-3 py-1.5 rounded">Update</button>
+                            </div>` : ''}
+                            ${currentUser.role === 'Agent' ? `
+                            <div class="bg-white p-4 rounded-xl border border-slate-200">
+                                <h4 class="font-bold mb-2">Agent Status Control</h4>
+                                <select class="border border-slate-300 rounded px-2 py-1 text-sm w-full">
+                                    <option>Scope</option>
+                                    <option>In Progress</option>
+                                    <option>Review</option>
+                                    <option>Completed</option>
+                                </select>
+                            </div>` : ''}
+                        </div>
+                        <div class="col-span-1 space-y-4">
+                            <div class="bg-blue-50 p-4 rounded-xl">
+                                <p class="text-xs uppercase font-bold text-blue-700">Assigned Agent</p>
+                                <p class="font-bold text-slate-800">${order.agent.name}</p>
+                                <p class="text-xs text-slate-500">${order.agent.id}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (tab === 'files') {
+                container.innerHTML = `
+                    <div class="flex justify-between items-center mb-4">
+                        [span_13](start_span)<h4 class="font-bold">File Repository[span_13](end_span)</h4>
+                        <button class="text-xs bg-slate-800 text-white px-3 py-2 rounded flex items-center gap-2"><i class="fa-solid fa-cloud-arrow-up"></i> Upload New</button>
+                    </div>
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-slate-500 uppercase bg-slate-100">
+                            <tr>
+                                <th class="px-4 py-3">File Name</th>
+                                <th class="px-4 py-3">Uploaded By</th>
+                                <th class="px-4 py-3">Date</th>
+                                <th class="px-4 py-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 bg-white">
+                            ${order.files.map(f => `
+                                <tr>
+                                    <td class="px-4 py-3 font-medium"><i class="fa-solid fa-file text-blue-400 mr-2"></i>${f.name}</td>
+                                    <td class="px-4 py-3">${f.uploader}</td>
+                                    <td class="px-4 py-3 text-slate-500">${f.date}</td>
+                                    <td class="px-4 py-3 text-right"><a href="#" class="text-blue-600 hover:underline">Download</a></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } else if (tab === 'payments') {
+                const isAgent = currentUser.role === 'Agent';
+                container.innerHTML = `
+                    <div class="flex justify-between items-center mb-4">
+                        [span_14](start_span)<h4 class="font-bold">Transaction History[span_14](end_span)</h4>
+                        ${isAgent ? '<button onclick="alert(\'Creates new payment row in DB\')" class="text-xs bg-green-600 text-white px-3 py-2 rounded"><i class="fa-solid fa-plus"></i> Create Invoice</button>' : ''}
+                    </div>
+                    <div class="space-y-3">
+                        ${order.payments.map(p => `
+                            <div class="bg-white border border-slate-200 rounded-lg p-4 flex justify-between items-center">
+                                <div>
+                                    <p class="font-bold text-slate-800">${p.title} <span class="text-xs font-mono text-slate-400 ml-2">#${p.id}</span></p>
+                                    <p class="text-xs text-slate-500">${p.date} • ${p.status}</p>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <span class="font-bold text-lg">$${p.amount.toFixed(2)}</span>
+                                    ${p.status === 'Paid' ? 
+                                        [span_15](start_span)`<button class="text-xs border border-slate-300 px-3 py-1 rounded hover:bg-slate-50"><i class="fa-solid fa-file-pdf mr-1"></i> Invoice[span_15](end_span)</button>` : 
+                                        `<button onclick="openQRModal(${p.amount}, '${p.id}')" class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded shadow hover:bg-blue-700">Pay Now</button>`
+                                    }
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } else if (tab === 'chat') {
+                container.innerHTML = `
+                   <div class="h-[400px] flex flex-col">
+                        <div class="flex-1 bg-slate-50 p-4 space-y-4 overflow-y-auto border border-slate-200 rounded-lg mb-3">
+                             ${order.chat.map(m => `
+                                <div class="flex flex-col items-start">
+                                    <span class="text-[10px] font-bold text-slate-600 ml-1">${m.sender}</span>
+                                    <div class="max-w-[80%] p-3 rounded-lg text-sm bg-white border border-slate-200 shadow-sm">
+                                        ${m.msg}
+                                    </div>
+                                    <span class="text-[10px] text-slate-400 mt-1 ml-1">${m.time}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <input type="text" placeholder="Type a message..." class="w-full border border-slate-300 rounded-lg p-3 text-sm focus:outline-none focus:border-blue-500">
+                   </div>
+                `;
+            }
+        }
+
+        // --- PAYMENT & QR LOGIC ---
+        function openQRModal(amount, id) {
+            document.getElementById('qr-modal').classList.remove('hidden');
+            document.getElementById('qr-amount').innerText = `Amount: $${amount.toFixed(2)}`;
+            document.getElementById('qr-txid').innerText = `Ref: ${id}`;
+        }
+        
+        function markPaidByClient() {
+            closeModal('qr-modal');
+            alert("Payment marked as 'Verifying'. Agent must confirm to generate invoice.");
+            // In real app: Update DB status to 'Verifying'
+        }
+
+        [span_16](start_span)// --- SUPPORT SYSTEM[span_16](end_span) ---
+        function renderSupport(container) {
+            container.innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">Support Center</h2>
+                    <button class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm shadow hover:bg-blue-700">Create Ticket</button>
+                </div>
+                <div class="grid gap-4">
+                    ${db.tickets.map(t => `
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="flex justify-between mb-4">
+                                <div>
+                                    <div class="flex gap-2 mb-1">
+                                        <span class="bg-slate-100 text-slate-600 px-2 rounded text-xs font-mono">${t.id}</span>
+                                        ${t.accessKey ? '<span class="text-xs text-orange-600 bg-orange-50 px-2 rounded border border-orange-100"><i class="fa-solid fa-lock mr-1"></i>Protected</span>' : ''}
+                                    </div>
+                                    <h3 class="font-bold text-lg">${t.subject}</h3>
+                                </div>
+                                <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded h-fit">${t.status}</span>
+                            </div>
+                            
+                            <div class="flex justify-between items-end border-t border-slate-100 pt-4">
+                                <div class="flex -space-x-2">
+                                    <div class="w-8 h-8 rounded-full bg-slate-300 border-2 border-white flex items-center justify-center text-xs">AM</div>
+                                    <div class="w-8 h-8 rounded-full bg-blue-600 border-2 border-white flex items-center justify-center text-white text-xs">S1</div>
+                                </div>
+                                <button onclick="openTicket('${t.id}')" class="text-sm text-blue-600 font-medium hover:underline">Open Chat <i class="fa-solid fa-arrow-right ml-1"></i></button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function openTicket(id) {
+            const ticket = db.tickets.find(t => t.id === id);
+            
+            // Logic: If user is Support Team, auto-enter. If Client/Other, check Key.
+            if (currentUser.role === 'Support' || currentUser.role === 'Client') {
+                // Auto join logic simulation
+                alert("Entering Secure Ticket Environment...");
+            } else {
+                // Require password for others (e.g. Sales wanting to check a ticket)
+                document.getElementById('ticket-auth-modal').classList.remove('hidden');
+            }
+        }
+
+        function authenticateTicket() {
+            const key = document.getElementById('ticket-key-input').value;
+            if(key === '1234') {
+                closeModal('ticket-auth-modal');
+                alert("Access Granted.");
+            } else {
+                alert("Invalid Key.");
+            }
+        }
+
+        // --- UTILS ---
+        function closeModal(id) {
+            if(id === 'order-modal') {
+                document.getElementById('order-panel').classList.add('translate-x-full');
+                setTimeout(() => document.getElementById(id).classList.add('hidden'), 300);
+            } else {
+                document.getElementById(id).classList.add('hidden');
+            }
+        }
+        
+        // Placeholder for Rewards
+        function renderRewards(container) {
+             [span_17](start_span)container.innerHTML = `<div class="p-10 text-center text-slate-500">Rewards & Referral System Configuration[span_17](end_span)</div>`;
+        }
+
+        // --- BOOTSTRAP ---
+        window.addEventListener('load', init);
+
+    </script>
+</body>
+</html>

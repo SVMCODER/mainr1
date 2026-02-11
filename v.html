@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise User Management</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .no-transition { transition: none !important; }
+        
+        /* Role Selection Styling */
+        .role-check:checked + div {
+            background-color: #f0fdf4;
+            border-color: #16a34a;
+            color: #15803d;
+        }
+        .role-check:checked + div i { color: #16a34a; }
+        
+        /* Spinner */
+        .loader {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #333;
+            border-radius: 50%;
+            width: 14px; height: 14px;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Modal Background */
+        .modal-bg {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 h-screen flex flex-col">
+
+    <header class="bg-white border-b border-gray-300 px-6 py-3 flex justify-between items-center shrink-0">
+        <div class="flex items-center gap-3">
+            <h1 class="font-semibold text-gray-700 text-sm">Admin Console</h1>
+        </div>
+        <div class="text-xs text-gray-500">
+            <span id="connection-status" class="text-green-600 font-bold">● System Online</span>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden">
+        
+        <aside class="w-64 bg-gray-50 border-r border-gray-300 hidden md:flex flex-col p-4">
+            <div class="mb-6">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Management</h3>
+                <nav class="space-y-1">
+                    <a href="#" class="block px-3 py-2 bg-white border border-gray-200 rounded text-sm font-medium text-gray-900 shadow-sm">
+                        <i class="fa-solid fa-user-plus w-5 text-gray-500"></i> Authentication
+                    </a>
+                    <a href="#" class="block px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded">
+                        <i class="fa-solid fa-users w-5 text-gray-400"></i> Audit Log
+                    </a>
+                </nav>
+            </div>
+        </aside>
+
+        <div class="flex-1 p-6 md:p-8 overflow-y-auto">
+            <div class="max-w-6xl mx-auto space-y-8">
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white border border-gray-300 rounded shadow-sm p-6">
+                        <h2 class="text-lg font-bold text-gray-800 mb-1">Account Details</h2>
+                        <p class="text-xs text-gray-500 mb-6">Enter details to generate secure credentials.</p>
+
+                        <form id="create-form" onsubmit="handleSubmit(event)" class="space-y-5">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-2">ASSIGN ROLE</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="role" value="Client" class="role-check sr-only" checked>
+                                        <div class="border border-gray-300 rounded p-2 flex items-center gap-2 hover:bg-gray-50">
+                                            <i class="fa-regular fa-building text-gray-400"></i>
+                                            <span class="text-sm font-medium">Client</span>
+                                        </div>
+                                    </label>
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="role" value="Agent" class="role-check sr-only">
+                                        <div class="border border-gray-300 rounded p-2 flex items-center gap-2 hover:bg-gray-50">
+                                            <i class="fa-solid fa-headset text-gray-400"></i>
+                                            <span class="text-sm font-medium">Agent</span>
+                                        </div>
+                                    </label>
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="role" value="Sales Team" class="role-check sr-only">
+                                        <div class="border border-gray-300 rounded p-2 flex items-center gap-2 hover:bg-gray-50">
+                                            <i class="fa-solid fa-briefcase text-gray-400"></i>
+                                            <span class="text-sm font-medium">Sales</span>
+                                        </div>
+                                    </label>
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="role" value="Support Team" class="role-check sr-only">
+                                        <div class="border border-gray-300 rounded p-2 flex items-center gap-2 hover:bg-gray-50">
+                                            <i class="fa-solid fa-life-ring text-gray-400"></i>
+                                            <span class="text-sm font-medium">Support</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1">FULL NAME</label>
+                                    <input type="text" id="display-name" required class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-black focus:border-black text-sm" placeholder="e.g. Jane Doe">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1">EMAIL ADDRESS</label>
+                                    <input type="email" id="user-email" required class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-black focus:border-black text-sm" placeholder="jane@company.com">
+                                </div>
+                            </div>
+
+                            <hr class="border-gray-200">
+
+                            <button type="submit" id="create-btn" class="w-full bg-gray-900 hover:bg-black text-white text-sm font-bold py-2.5 rounded shadow-sm flex items-center justify-center gap-2">
+                                <span id="btn-text">Create User & Send Email</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <div id="empty-state" class="flex-1 bg-gray-50 border-2 border-dashed border-gray-200 rounded flex flex-col items-center justify-center text-center p-8">
+                            <i class="fa-solid fa-terminal text-gray-300 text-3xl mb-3"></i>
+                            <p class="text-sm text-gray-500">Credentials will appear here.</p>
+                        </div>
+
+                        <div id="result-card" class="hidden h-full bg-white border border-green-200 rounded shadow-sm p-6 relative">
+                            <div class="flex items-center gap-3 mb-4 text-green-700 bg-green-50 p-3 rounded border border-green-100">
+                                <i class="fa-solid fa-circle-check"></i>
+                                <span class="font-bold text-sm">User Provisioned & Email Queued</span>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div class="bg-gray-50 p-4 rounded border border-gray-200">
+                                    <div class="grid grid-cols-1 gap-4">
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-gray-400 uppercase">Username</label>
+                                            <div class="font-mono text-lg font-bold text-gray-800 select-all" id="out-username">...</div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-gray-400 uppercase">Password</label>
+                                            <div class="flex items-center gap-2">
+                                                <div class="font-mono text-lg font-bold text-gray-800 select-all" id="out-password">...</div>
+                                                <button onclick="copyPass()" class="text-blue-600 hover:underline text-xs">Copy</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-2 pt-2">
+                                    <button onclick="resetForm()" class="w-full text-blue-600 text-sm hover:underline py-2">
+                                        Process Next User
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-gray-300 rounded shadow-sm overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                        <h3 class="text-sm font-bold text-gray-700">User Directory</h3>
+                        <span id="user-count" class="text-xs bg-gray-200 text-gray-600 py-1 px-2 rounded-full">0 Users</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name / Email</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="user-table-body" class="bg-white divide-y divide-gray-200 text-sm">
+                                <tr>
+                                    <td colspan="5" class="px-6 py-4 text-center text-gray-400 italic">Loading users...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="edit-modal" class="fixed inset-0 modal-bg hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-gray-800">Edit User</h3>
+                <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <input type="hidden" id="edit-uid">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">FULL NAME</label>
+                    <input type="text" id="edit-name" class="w-full px-3 py-2 border border-gray-300 rounded text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">ROLE</label>
+                    <select id="edit-role" class="w-full px-3 py-2 border border-gray-300 rounded text-sm bg-white">
+                        <option value="Client">Client</option>
+                        <option value="Agent">Agent</option>
+                        <option value="Sales Team">Sales Team</option>
+                        <option value="Support Team">Support Team</option>
+                    </select>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end gap-3">
+                <button onclick="closeEditModal()" class="px-4 py-2 bg-white border border-gray-300 rounded text-sm font-medium hover:bg-gray-100">Cancel</button>
+                <button onclick="saveEdit()" class="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. CONFIGURATION ---
+        // TODO: Replace with your actual Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBDeDc6pWhghXmGYg9QYQ3nVAGTpo1u5AM",
+            authDomain: "research-craft.firebaseapp.com",
+            projectId: "research-craft",
+            storageBucket: "research-craft.firebasestorage.app",
+            messagingSenderId: "284823836570",
+            appId: "1:284823836570:web:fb0d93cdf92368525d8c23",
+            measurementId: "G-6H5BS98612"
+        };
+        
+        // TODO: Replace this with your key. 
+        // WARNING: Using API keys in frontend code is not secure for production.
+        const BREVO_API_KEY = "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";
+
+        let mainApp, db;
+        try {
+            if (!firebase.apps.length) mainApp = firebase.initializeApp(firebaseConfig);
+            else mainApp = firebase.app();
+            db = mainApp.firestore();
+        } catch (e) { console.error(e); }
+
+        // --- 2. UTILITIES ---
+        const generateUsername = () => 'user_' + Math.random().toString(36).substr(2, 6);
+        const generatePassword = () => Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4).toUpperCase() + '!';
+
+        // --- 3. CORE LOGIC ---
+        
+        // A. Create User Function
+        async function createAccount(userRole, displayName, userEmail) {
+            const username = generateUsername();
+            const password = generatePassword();
+            
+            // Secondary app to create user without logging admin out
+            const secondaryApp = firebase.initializeApp(firebaseConfig, "Prov_" + Date.now());
+            
+            try {
+                const userCred = await secondaryApp.auth().createUserWithEmailAndPassword(userEmail, password);
+                const uid = userCred.user.uid;
+
+                // Fire and forget DB write
+                const dbTask = db.collection('users').doc(uid).set({
+                    displayName, 
+                    email: userEmail, 
+                    username, 
+                    role: userRole,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Cleanup secondary app immediately, don't wait for DB
+                dbTask.then(() => secondaryApp.delete());
+                
+                return { username, password, email: userEmail, role: userRole, name: displayName };
+
+            } catch (error) {
+                secondaryApp.delete();
+                throw error;
+            }
+        }
+
+        // B. Send Email Function (Automatic)
+        async function sendAutoEmail(creds) {
+            console.log("Attempting to send email to:", creds.email);
+            
+            const emailHtml = `
+                <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+ 
+</head>
+
+<body style="margin:0; padding:0; background:#eef2f7; font-family: 'Segoe UI', Arial, sans-serif;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 0;">
+    <tr>
+      <td align="center">
+
+        <!-- Card -->
+        <table width="600" cellpadding="0" cellspacing="0"
+          style="background:#ffffff; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.08); overflow:hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#2563eb,#1e40af); padding:28px; text-align:center;">
+              <h1 style="margin:0; color:#ffffff; font-size:24px; letter-spacing:0.4px;">
+                Research Connect </h1>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:36px; color:#111827;">
+
+              <p style="margin:0 0 16px; font-size:15px;">
+                Hello <strong>${creds.name}</strong>,
+              </p>
+
+              <p style="margin:0 0 28px; font-size:15px; line-height:1.6; color:#374151;">
+                Your account has been successfully created. Below are your login credentials.
+              </p>
+
+              <!-- Credentials -->
+              <table width="100%" cellpadding="0" cellspacing="0"
+                style="background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px;">
+                <tr>
+                  <td style="padding:22px;">
+                    <p style="margin:0 0 12px; font-size:14px;">
+                      <strong>Username</strong><br />
+                      <span style="color:#2563eb;">${creds.username}</span>
+                    </p>
+                    <p style="margin:0 0 12px; font-size:14px;">
+                      <strong>Password</strong><br />
+                      <span style="color:#2563eb;">${creds.password}</span>
+                    </p>
+                    <p style="margin:0; font-size:14px;">
+                      <strong>Role</strong><br />
+                      <span style="color:#2563eb;">${creds.role}</span>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CTA -->
+              <div style="text-align:center; margin:34px 0 28px;">
+                <a href="https://researchconnect.in/auth"
+                  style="background:#2563eb; color:#ffffff; text-decoration:none; padding:14px 28px; font-size:14px; border-radius:8px; display:inline-block;">
+                  Login to Portal
+                </a>
+              </div>
+
+             
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#f3f4f6; padding:18px; text-align:center;">
+              <p style="margin:0; font-size:12px; color:#9ca3af;">
+                Team <br>Research Connect
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
+            `;
+
+            try {
+                const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+                    method: "POST",
+                    headers: {
+                        "api-key": BREVO_API_KEY,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        sender: { name: "Research Connect", email: "noreply.austek@gmail.com" },
+                        to: [{ email: creds.email, name: creds.name }],
+                        subject: `Welcome to Research Connect ${creds.name}!`,
+                        htmlContent: emailHtml
+                    })
+                });
+                
+                if(response.ok) console.log("Email sent successfully");
+                else console.error("Email failed", await response.json());
+                
+            } catch (err) {
+                console.error("Email network error", err);
+            }
+        }
+
+        // --- 4. UI HANDLERS ---
+
+        // Handle Form Submit
+        async function handleSubmit(e) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('create-btn');
+            const btnText = document.getElementById('btn-text');
+            
+            btn.disabled = true;
+            btnText.innerHTML = '<span class="loader mr-2"></span> Provisioning...';
+
+            const displayName = document.getElementById('display-name').value;
+            const userEmail = document.getElementById('user-email').value;
+            const userRole = document.querySelector('input[name="role"]:checked').value;
+
+            try {
+                // 1. Create User
+                const creds = await createAccount(userRole, displayName, userEmail);
+                
+                // 2. Trigger Email (Background)
+                sendAutoEmail(creds);
+
+                // 3. Update UI
+                document.getElementById('empty-state').classList.add('hidden');
+                document.getElementById('result-card').classList.remove('hidden');
+                document.getElementById('out-username').innerText = creds.username;
+                document.getElementById('out-password').innerText = creds.password;
+
+                // Clear inputs
+                document.getElementById('display-name').value = '';
+                document.getElementById('user-email').value = '';
+
+            } catch (error) {
+                alert("Error: " + error.message);
+            } finally {
+                btn.disabled = false;
+                btnText.innerText = "Create User & Send Email";
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('result-card').classList.add('hidden');
+            document.getElementById('empty-state').classList.remove('hidden');
+        }
+
+        function copyPass() {
+            navigator.clipboard.writeText(document.getElementById('out-password').innerText);
+            alert("Password Copied");
+        }
+
+        // --- 5. CRUD: READ (User List) ---
+        function loadUsers() {
+            const tbody = document.getElementById('user-table-body');
+            const countLabel = document.getElementById('user-count');
+
+            db.collection('users').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+                tbody.innerHTML = '';
+                countLabel.innerText = `${snapshot.size} Users`;
+
+                if (snapshot.empty) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No users found.</td></tr>';
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    const user = doc.data();
+                    const row = `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 mr-3">
+                                        ${user.displayName ? user.displayName.charAt(0).toUpperCase() : '?'}
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">${user.displayName}</div>
+                                        <div class="text-xs text-gray-500">${user.email}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                    ${user.role === 'Client' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}">
+                                    ${user.role}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-mono">
+                                ${user.username}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
+                                ${user.createdAt ? new Date(user.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button onclick="openEditModal('${doc.id}', '${user.displayName}', '${user.role}')" class="text-blue-600 hover:text-blue-900 mr-3"><i class="fa-solid fa-pen-to-square"></i></button>
+                                <button onclick="deleteUser('${doc.id}')" class="text-red-600 hover:text-red-900"><i class="fa-solid fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.insertAdjacentHTML('beforeend', row);
+                });
+            });
+        }
+
+        // --- 6. CRUD: UPDATE & DELETE ---
+        
+        // Delete User (DB Record only, Auth deletion requires Admin SDK)
+        async function deleteUser(uid) {
+            if(confirm("Are you sure you want to delete this user record? (Note: This deletes the database record only, not the Auth login)")) {
+                try {
+                    await db.collection('users').doc(uid).delete();
+                } catch(e) {
+                    alert("Error deleting: " + e.message);
+                }
+            }
+        }
+
+        // Edit Modal Logic
+        function openEditModal(uid, name, role) {
+            document.getElementById('edit-uid').value = uid;
+            document.getElementById('edit-name').value = name;
+            document.getElementById('edit-role').value = role;
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+        }
+
+        async function saveEdit() {
+            const uid = document.getElementById('edit-uid').value;
+            const name = document.getElementById('edit-name').value;
+            const role = document.getElementById('edit-role').value;
+
+            try {
+                await db.collection('users').doc(uid).update({
+                    displayName: name,
+                    role: role
+                });
+                closeEditModal();
+            } catch(e) {
+                alert("Update failed: " + e.message);
+            }
+        }
+
+        // Initialize Data Load
+        loadUsers();
+
+    </script>
+</body>
+</html>

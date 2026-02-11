@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Research Craft | Client Portal</title>
+    
+    <!-- Production Tailwind CSS via CDN (alternative) -->
+    <script src="https://unpkg.com/tailwindcss-jit-cdn"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root {
+            --primary: #007AFF;
+            --bg-base: #F2F2F7;
+            --bg-card: #FFFFFF;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-base);
+            color: #1C1C1E;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none;
+        }
+
+        /* iOS Scrollbar Hide */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Safe Areas */
+        .safe-top { padding-top: env(safe-area-inset-top); }
+        .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        .safe-bottom-margin { margin-bottom: env(safe-area-inset-bottom); }
+
+        /* iOS Animations */
+        .ios-slide-up {
+            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .ios-fade-in {
+            animation: fadeIn 0.2s ease-out forwards;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Custom UI Elements */
+        .ios-card {
+            background: var(--bg-card);
+            border-radius: 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .ios-input {
+            background: #F2F2F7;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 16px;
+            width: 100%;
+            outline: none;
+            transition: background 0.2s;
+        }
+        .ios-input:focus {
+            background: #E5E5EA;
+        }
+
+        .ios-btn {
+            border-radius: 12px;
+            font-weight: 600;
+            transition: transform 0.1s, opacity 0.1s;
+        }
+        .ios-btn:active {
+            transform: scale(0.98);
+            opacity: 0.8;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+        }
+
+        /* Tab Bar Active State */
+        .tab-item.active {
+            color: var(--primary);
+        }
+        .tab-item.active i {
+            transform: translateY(-2px);
+        }
+
+        /* Status Badges */
+        .badge-pending { background: #FF950020; color: #FF9500; }
+        .badge-success { background: #34C75920; color: #34C759; }
+        .badge-error { background: #FF3B3020; color: #FF3B30; }
+        .badge-neutral { background: #8E8E9320; color: #8E8E93; }
+        .badge-blue { background: #007AFF20; color: #007AFF; }
+        .badge-purple { background: #AF52DE20; color: #AF52DE; }
+        .badge-green { background: #34C75920; color: #34C759; }
+        
+        /* QR Code Container */
+        .qr-container {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        /* Payment Status */
+        .payment-status-pending { border-left: 4px solid #FF9500; }
+        .payment-status-confirmed { border-left: 4px solid #34C759; }
+        .payment-status-cancelled { border-left: 4px solid #FF3B30; }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col">
+
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6">
+        <div class="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30">
+            <i class="fas fa-flask text-white text-3xl"></i>
+        </div>
+        <h1 class="text-2xl font-bold mb-2">Research Craft</h1>
+        <p class="text-gray-500 mb-8 text-center">Client Portal</p>
+
+        <div class="w-full max-w-sm space-y-4">
+            <input type="email" id="auth-email" placeholder="Email" class="ios-input" value="client@example.com">
+            <input type="password" id="auth-password" placeholder="Password" class="ios-input" value="password123">
+            
+            <button onclick="handleLogin()" class="ios-btn w-full bg-[#007AFF] text-white py-3.5 text-lg shadow-lg shadow-blue-500/20">
+                Sign In
+            </button>
+            <button onclick="handleRegister()" class="ios-btn w-full bg-gray-100 text-blue-500 py-3.5 text-lg">
+                Create Account
+            </button>
+        </div>
+        <p class="mt-6 text-xs text-gray-400">Secure Firestore Connection</p>
+    </div>
+
+    <!-- Main App -->
+    <div id="app-container" class="flex-1 flex flex-col relative hidden">
+        
+        <header class="bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0 z-30 safe-top">
+            <div class="px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-xs">RC</span>
+                    </div>
+                    <div>
+                        <h1 id="header-title" class="font-bold text-gray-900 leading-none">Dashboard</h1>
+                        <span id="header-user-email" class="text-[10px] text-gray-500 font-medium">Loading...</span>
+                    </div>
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="openSalesChat()" class="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-blue-600 active:bg-blue-100 transition-colors">
+                        <i class="fas fa-comment-dots"></i>
+                    </button>
+                    <button onclick="handleLogout()" class="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center text-red-500 active:bg-red-100 transition-colors">
+                        <i class="fas fa-power-off"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main id="main-content" class="flex-1 overflow-y-auto hide-scrollbar pb-24 px-4 pt-4">
+            <!-- Content will be loaded here -->
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bg-white/90 backdrop-blur-xl border-t border-gray-200 fixed bottom-0 w-full z-40 safe-bottom">
+            <div class="flex justify-around items-center h-16 safe-bottom-margin">
+                <button onclick="router('dashboard')" class="tab-item active flex flex-col items-center justify-center w-full h-full text-gray-400 transition-colors" data-tab="dashboard">
+                    <i class="fas fa-chart-pie text-xl mb-1"></i>
+                    <span class="text-[10px] font-medium">Home</span>
+                </button>
+                <button onclick="router('orders')" class="tab-item flex flex-col items-center justify-center w-full h-full text-gray-400 transition-colors" data-tab="orders">
+                    <i class="fas fa-folder-open text-xl mb-1"></i>
+                    <span class="text-[10px] font-medium">Orders</span>
+                </button>
+                <button onclick="openCreateOrderModal()" class="flex flex-col items-center justify-center w-full h-full">
+                    <div class="w-12 h-12 bg-blue-600 rounded-full shadow-lg shadow-blue-500/40 flex items-center justify-center transform -translate-y-4 border-4 border-[#F2F2F7]">
+                        <i class="fas fa-plus text-white text-xl"></i>
+                    </div>
+                </button>
+                <button onclick="router('payments')" class="tab-item flex flex-col items-center justify-center w-full h-full text-gray-400 transition-colors" data-tab="payments">
+                    <i class="fas fa-credit-card text-xl mb-1"></i>
+                    <span class="text-[10px] font-medium">Payments</span>
+                </button>
+                <button onclick="router('support')" class="tab-item flex flex-col items-center justify-center w-full h-full text-gray-400 transition-colors" data-tab="support">
+                    <i class="fas fa-life-ring text-xl mb-1"></i>
+                    <span class="text-[10px] font-medium">Support</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Modal Container -->
+    <div id="modal-container" class="fixed inset-0 z-50 pointer-events-none flex items-end justify-center sm:items-center"></div>
+    
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-2 left-0 right-0 z-[60] flex flex-col items-center space-y-2 pointer-events-none safe-top"></div>
+
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/davidshimjs-qrcodejs@0.0.2/qrcode.min.js"></script>
+
+    <script>
+        // --- 1. CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBDeDc6pWhghXmGYg9QYQ3nVAGTpo1u5AM",
+            authDomain: "research-craft.firebaseapp.com",
+            projectId: "research-craft",
+            storageBucket: "research-craft.firebasestorage.app",
+            messagingSenderId: "284823836570",
+            appId: "1:284823836570:web:fb0d93cdf92368525d8c23",
+            measurementId: "G-6H5BS98612"
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // App State
+        let currentUser = null;
+        let activeListeners = [];
+        let currentView = 'dashboard';
+
+        // --- 2. AUTHENTICATION ---
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                if (userDoc.exists && userDoc.data().role === 'client') {
+                    currentUser = user;
+                    document.getElementById('header-user-email').textContent = user.email;
+                    document.getElementById('auth-screen').classList.add('hidden');
+                    document.getElementById('app-container').classList.remove('hidden');
+                    router('dashboard');
+                } else if (!userDoc.exists) {
+                    // Create Profile if new registration
+                    await db.collection('users').doc(user.uid).set({
+                        email: user.email,
+                        role: 'client',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    currentUser = user;
+                    document.getElementById('header-user-email').textContent = user.email;
+                    document.getElementById('auth-screen').classList.add('hidden');
+                    document.getElementById('app-container').classList.remove('hidden');
+                    router('dashboard');
+                } else {
+                    // Not a client
+                    showToast('Access Denied: Clients Only', 'error');
+                    auth.signOut();
+                }
+            } else {
+                currentUser = null;
+                cleanupListeners();
+                document.getElementById('app-container').classList.add('hidden');
+                document.getElementById('auth-screen').classList.remove('hidden');
+            }
+        });
+
+        async function handleLogin() {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-password').value;
+            try {
+                await auth.signInWithEmailAndPassword(email, pass);
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        async function handleRegister() {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-password').value;
+            try {
+                await auth.createUserWithEmailAndPassword(email, pass);
+                showToast('Account created', 'success');
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        function handleLogout() {
+            auth.signOut();
+        }
+
+        function cleanupListeners() {
+            activeListeners.forEach(unsubscribe => unsubscribe());
+            activeListeners = [];
+        }
+
+        // --- 3. ROUTER & VIEWS ---
+
+        function router(viewName) {
+            currentView = viewName;
+            
+            // Update Tab Bar
+            document.querySelectorAll('.tab-item').forEach(el => {
+                el.classList.toggle('active', el.dataset.tab === viewName);
+                const icon = el.querySelector('i');
+                icon.classList.remove('fas', 'far');
+                icon.classList.add(el.dataset.tab === viewName ? 'fas' : 'fas');
+            });
+
+            // Update Header Title
+            const titles = {
+                'dashboard': 'Dashboard',
+                'orders': 'My Orders',
+                'payments': 'Payments',
+                'support': 'Support'
+            };
+            document.getElementById('header-title').textContent = titles[viewName] || 'Dashboard';
+
+            const main = document.getElementById('main-content');
+            main.innerHTML = '<div class="flex justify-center pt-10"><i class="fas fa-spinner fa-spin text-blue-500 text-2xl"></i></div>';
+            
+            // Clean listeners
+            activeListeners.forEach(unsub => unsub());
+            activeListeners = [];
+            
+            if (viewName === 'dashboard') loadDashboard(main);
+            if (viewName === 'orders') loadOrders(main);
+            if (viewName === 'payments') loadPayments(main);
+            if (viewName === 'support') loadSupport(main);
+        }
+
+        // --- 4. FEATURE: DASHBOARD (Updated) ---
+
+        function loadDashboard(container) {
+            container.innerHTML = `
+                <div class="space-y-6 ios-fade-in">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="ios-card p-4 bg-blue-500 text-white">
+                            <p class="text-xs opacity-80 font-medium uppercase tracking-wide">Active Orders</p>
+                            <h2 class="text-3xl font-bold mt-1" id="dash-orders-count">-</h2>
+                        </div>
+                        <div class="ios-card p-4 bg-purple-500 text-white">
+                            <p class="text-xs opacity-80 font-medium uppercase tracking-wide">Pending Payments</p>
+                            <h2 class="text-3xl font-bold mt-1" id="dash-payment-count">-</h2>
+                        </div>
+                    </div>
+
+                    <!-- Pending Payments Section -->
+                    <div>
+                        <div class="flex justify-between items-center mb-3 px-1">
+                            <h3 class="font-bold text-lg">Pending Payments</h3>
+                            <button onclick="router('payments')" class="text-blue-500 text-sm font-medium">See All</button>
+                        </div>
+                        <div class="space-y-3" id="dash-payments-list">
+                            <div class="text-center text-gray-400 py-4">Loading...</div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div>
+                        <div class="flex justify-between items-center mb-3 px-1">
+                            <h3 class="font-bold text-lg">Recent Activity</h3>
+                            <button onclick="router('orders')" class="text-blue-500 text-sm font-medium">See All</button>
+                        </div>
+                        <div class="space-y-3" id="dash-recent-list">
+                            <div class="text-center text-gray-400 py-4">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // 1. Live Order Count (Fixed Query - no composite index needed)
+            const unsubOrders = db.collection('orders')
+                .where('clientUid', '==', currentUser.uid)
+                .onSnapshot(snap => {
+                    const activeOrders = snap.docs.filter(doc => 
+                        ['pending', 'in-progress', 'review'].includes(doc.data().status)
+                    );
+                    document.getElementById('dash-orders-count').textContent = activeOrders.length;
+                });
+            activeListeners.push(unsubOrders);
+
+            // 2. Pending Payments Count
+            const unsubPaymentsCount = db.collection('payments')
+                .where('clientUid', '==', currentUser.uid)
+                .where('status', '==', 'pending')
+                .onSnapshot(snap => {
+                    document.getElementById('dash-payment-count').textContent = snap.size;
+                });
+            activeListeners.push(unsubPaymentsCount);
+
+            // 3. Recent Pending Payments (limited)
+            const unsubPaymentsList = db.collection('payments')
+                .where('clientUid', '==', currentUser.uid)
+                .where('status', '==', 'pending')
+                .orderBy('createdAt', 'desc')
+                .limit(3)
+                .onSnapshot(snap => {
+                    const list = document.getElementById('dash-payments-list');
+                    if(snap.empty) {
+                        list.innerHTML = `<div class="text-center text-gray-400 py-4">No pending payments</div>`;
+                        return;
+                    }
+                    list.innerHTML = '';
+                    snap.forEach(doc => {
+                        const data = doc.data();
+                        list.innerHTML += `
+                            <div class="ios-card p-4 payment-status-pending" onclick="openPaymentDetails('${doc.id}')">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h4 class="font-semibold text-sm">${data.title}</h4>
+                                        <p class="text-xs text-gray-500">$${data.amount} • ${data.reason || 'Payment'}</p>
+                                    </div>
+                                    <span class="text-xs font-bold text-amber-600">PENDING</span>
+                                </div>
+                                <div class="mt-2 flex justify-between items-center">
+                                    <span class="text-xs text-gray-400">ID: ${doc.id.substring(0,8)}...</span>
+                                    <button onclick="event.stopPropagation(); markPaymentAsPaid('${doc.id}')" class="text-xs bg-blue-100 text-blue-600 px-3 py-1 rounded-full font-medium">
+                                        Mark Paid
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                });
+            activeListeners.push(unsubPaymentsList);
+
+            // 4. Recent Orders
+            const unsubList = db.collection('orders')
+                .where('clientUid', '==', currentUser.uid)
+                .orderBy('createdAt', 'desc')
+                .limit(3)
+                .onSnapshot(snap => {
+                    const list = document.getElementById('dash-recent-list');
+                    if(snap.empty) {
+                        list.innerHTML = `<div class="text-center text-gray-400 py-4">No recent activity</div>`;
+                        return;
+                    }
+                    list.innerHTML = '';
+                    snap.forEach(doc => {
+                        const data = doc.data();
+                        list.innerHTML += `
+                            <div class="ios-card p-4 flex items-center justify-between" onclick="openOrderDetails('${doc.id}')">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
+                                        <i class="fas fa-file-alt"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-sm">${data.title}</h4>
+                                        <p class="text-xs text-gray-500 capitalize">${data.status}</p>
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-300 text-sm"></i>
+                            </div>
+                        `;
+                    });
+                }, error => {
+                    console.log("Using alternative query for orders (no composite index)");
+                    // Fallback query without ordering
+                    db.collection('orders')
+                        .where('clientUid', '==', currentUser.uid)
+                        .get().then(snap => {
+                            const list = document.getElementById('dash-recent-list');
+                            if(snap.empty) {
+                                list.innerHTML = `<div class="text-center text-gray-400 py-4">No recent activity</div>`;
+                                return;
+                            }
+                            list.innerHTML = '';
+                            snap.docs.slice(0,3).forEach(doc => {
+                                const data = doc.data();
+                                list.innerHTML += `
+                                    <div class="ios-card p-4 flex items-center justify-between" onclick="openOrderDetails('${doc.id}')">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
+                                                <i class="fas fa-file-alt"></i>
+                                            </div>
+                                            <div>
+                                                <h4 class="font-semibold text-sm">${data.title}</h4>
+                                                <p class="text-xs text-gray-500 capitalize">${data.status}</p>
+                                            </div>
+                                        </div>
+                                        <i class="fas fa-chevron-right text-gray-300 text-sm"></i>
+                                    </div>
+                                `;
+                            });
+                        });
+                });
+            activeListeners.push(unsubList);
+        }
+
+        // --- 5. FEATURE: ORDERS (Updated with Update Requests) ---
+
+        function loadOrders(container) {
+            container.innerHTML = `
+                <div class="space-y-4 ios-fade-in pb-20">
+                    <div class="flex justify-between items-center px-1">
+                        <h2 class="text-2xl font-bold">My Orders</h2>
+                        <button onclick="openCreateUpdateRequestModal()" class="bg-purple-500 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-lg shadow-purple-500/20 active:scale-95 transition-transform">
+                            <i class="fas fa-plus-circle mr-1"></i> Request Update
+                        </button>
+                    </div>
+                    
+                    <div id="orders-list" class="space-y-3">
+                        <div class="flex justify-center py-10"><i class="fas fa-spinner fa-spin text-gray-400"></i></div>
+                    </div>
+                </div>
+            `;
+
+            const unsub = db.collection('orders')
+                .where('clientUid', '==', currentUser.uid)
+                .onSnapshot(snap => {
+                    const list = document.getElementById('orders-list');
+                    list.innerHTML = '';
+                    
+                    if (snap.empty) {
+                        list.innerHTML = `<div class="text-center text-gray-400 mt-10">No orders found. Tap + to create one.</div>`;
+                        return;
+                    }
+
+                    // Sort manually in memory (since composite index may not exist)
+                    const sortedDocs = snap.docs.sort((a, b) => {
+                        const aTime = a.data().createdAt?.seconds || 0;
+                        const bTime = b.data().createdAt?.seconds || 0;
+                        return bTime - aTime;
+                    });
+
+                    sortedDocs.forEach(doc => {
+                        const data = doc.data();
+                        const badgeColor = data.status === 'completed' ? 'badge-success' : 
+                                         data.status === 'pending' ? 'badge-pending' : 
+                                         data.status === 'in-progress' ? 'badge-blue' : 'badge-neutral';
+                        
+                        list.innerHTML += `
+                            <div class="ios-card overflow-hidden">
+                                <div class="p-4" onclick="openOrderDetails('${doc.id}')">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <span class="text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider ${badgeColor}">
+                                            ${data.status}
+                                        </span>
+                                        <span class="text-xs text-gray-400">${data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</span>
+                                    </div>
+                                    <h3 class="font-bold text-lg mb-1">${data.title}</h3>
+                                    <p class="text-sm text-gray-500 line-clamp-2">${data.description}</p>
+                                    
+                                    <!-- Update Requests Section -->
+                                    <div class="mt-3 pt-3 border-t border-gray-100">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-xs font-medium text-gray-700">Update Requests:</span>
+                                            <button onclick="event.stopPropagation(); viewOrderUpdates('${doc.id}')" class="text-xs text-blue-500 font-medium">
+                                                View (${data.updateRequests ? data.updateRequests.length : 0})
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 px-4 py-3 flex border-t border-gray-100">
+                                    <button onclick="event.stopPropagation(); openOrderChat('${doc.id}', '${data.title}')" class="flex-1 text-sm font-semibold text-blue-600 flex items-center justify-center space-x-2">
+                                        <i class="fas fa-comments"></i> <span>Agent Chat</span>
+                                    </button>
+                                    <div class="w-px bg-gray-200 mx-2"></div>
+                                    <button onclick="event.stopPropagation(); createUpdateRequestForOrder('${doc.id}')" class="flex-1 text-sm font-semibold text-purple-600 flex items-center justify-center space-x-2">
+                                        <i class="fas fa-edit"></i> <span>Request Edit</span>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }, error => {
+                    console.log("Orders query error:", error);
+                    showToast("Loading orders (some features limited)", "info");
+                });
+            activeListeners.push(unsub);
+        }
+
+        // --- 6. FEATURE: PAYMENTS (New) ---
+
+        function loadPayments(container) {
+            container.innerHTML = `
+                <div class="space-y-4 ios-fade-in pb-20">
+                    <div class="flex justify-between items-center px-1">
+                        <h2 class="text-2xl font-bold">Payments</h2>
+                        <div class="flex space-x-2">
+                            <button onclick="filterPayments('all')" id="filter-all" class="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-600">
+                                All
+                            </button>
+                            <button onclick="filterPayments('pending')" id="filter-pending" class="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
+                                Pending
+                            </button>
+                            <button onclick="filterPayments('confirmed')" id="filter-confirmed" class="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
+                                Confirmed
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="payments-list" class="space-y-3">
+                        <div class="flex justify-center py-10"><i class="fas fa-spinner fa-spin text-gray-400"></i></div>
+                    </div>
+                </div>
+            `;
+
+            // Initial load with all payments
+            filterPayments('all');
+        }
+
+        function filterPayments(filterType) {
+            // Update filter buttons
+            document.getElementById('filter-all').className = `px-3 py-1 rounded-full text-sm font-medium ${filterType === 'all' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`;
+            document.getElementById('filter-pending').className = `px-3 py-1 rounded-full text-sm font-medium ${filterType === 'pending' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`;
+            document.getElementById('filter-confirmed').className = `px-3 py-1 rounded-full text-sm font-medium ${filterType === 'confirmed' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`;
+
+            const list = document.getElementById('payments-list');
+            list.innerHTML = '<div class="flex justify-center py-10"><i class="fas fa-spinner fa-spin text-gray-400"></i></div>';
+
+            let query = db.collection('payments')
+                .where('clientUid', '==', currentUser.uid);
+
+            if (filterType !== 'all') {
+                query = query.where('status', '==', filterType);
+            }
+
+            const unsub = query.onSnapshot(snap => {
+                list.innerHTML = '';
+                
+                if (snap.empty) {
+                    list.innerHTML = `
+                        <div class="text-center py-10">
+                            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-credit-card text-gray-400 text-2xl"></i>
+                            </div>
+                            <p class="text-gray-500">No ${filterType !== 'all' ? filterType : ''} payments found</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Sort by date
+                const sortedDocs = snap.docs.sort((a, b) => {
+                    const aTime = a.data().createdAt?.seconds || 0;
+                    const bTime = b.data().createdAt?.seconds || 0;
+                    return bTime - aTime;
+                });
+
+                sortedDocs.forEach(doc => {
+                    const data = doc.data();
+                    const statusClass = data.status === 'pending' ? 'payment-status-pending' : 
+                                     data.status === 'confirmed' ? 'payment-status-confirmed' : 
+                                     'payment-status-cancelled';
+                    
+                    const statusColor = data.status === 'pending' ? 'text-amber-600' : 
+                                      data.status === 'confirmed' ? 'text-green-600' : 
+                                      'text-red-600';
+
+                    list.innerHTML += `
+                        <div class="ios-card p-4 ${statusClass}" onclick="openPaymentDetails('${doc.id}')">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="flex-1">
+                                    <h3 class="font-bold text-lg">${data.title}</h3>
+                                    <p class="text-sm text-gray-500">${data.reason || 'Payment request'}</p>
+                                </div>
+                                <span class="text-xs font-bold uppercase ${statusColor}">${data.status}</span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-2xl font-bold">$${data.amount}</span>
+                                <span class="text-xs text-gray-400">${data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
+                                    ID: ${doc.id.substring(0,8)}...
+                                </span>
+                                
+                                <div class="flex space-x-2">
+                                    ${data.status === 'pending' ? `
+                                        <button onclick="event.stopPropagation(); markPaymentAsPaid('${doc.id}')" class="text-xs bg-blue-100 text-blue-600 px-3 py-1 rounded-full font-medium">
+                                            Mark Paid
+                                        </button>
+                                        <button onclick="event.stopPropagation(); viewPaymentQR('${doc.id}')" class="text-xs bg-green-100 text-green-600 px-3 py-1 rounded-full font-medium">
+                                            View QR
+                                        </button>
+                                    ` : ''}
+                                    
+                                    ${data.status === 'confirmed' ? `
+                                        <span class="text-xs bg-green-100 text-green-600 px-3 py-1 rounded-full font-medium">
+                                            <i class="fas fa-check mr-1"></i> Confirmed
+                                        </span>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }, error => {
+                console.log("Payments query error:", error);
+                list.innerHTML = `<div class="text-center text-gray-400 mt-10">Error loading payments. Please try again.</div>`;
+            });
+
+            activeListeners.push(unsub);
+        }
+
+        // --- 7. FEATURE: SUPPORT TICKETS ---
+
+        function loadSupport(container) {
+            container.innerHTML = `
+                <div class="space-y-4 ios-fade-in">
+                    <div class="flex justify-between items-center px-1">
+                        <h2 class="text-2xl font-bold">Support</h2>
+                        <button onclick="attemptCreateTicket()" class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-lg shadow-gray-900/20 active:scale-95 transition-transform">
+                            Open Ticket
+                        </button>
+                    </div>
+
+                    <div id="tickets-list" class="space-y-3"></div>
+                </div>
+            `;
+
+            const unsub = db.collection('tickets')
+                .where('clientUid', '==', currentUser.uid)
+                .onSnapshot(snap => {
+                    const list = document.getElementById('tickets-list');
+                    list.innerHTML = '';
+                    
+                    if(snap.empty) {
+                        list.innerHTML = `
+                            <div class="text-center py-10">
+                                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <i class="fas fa-life-ring text-gray-400 text-2xl"></i>
+                                </div>
+                                <p class="text-gray-500">No support tickets</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    // Sort manually
+                    const sortedDocs = snap.docs.sort((a, b) => {
+                        const aTime = a.data().createdAt?.seconds || 0;
+                        const bTime = b.data().createdAt?.seconds || 0;
+                        return bTime - aTime;
+                    });
+
+                    sortedDocs.forEach(doc => {
+                        const t = doc.data();
+                        list.innerHTML += `
+                            <div class="ios-card p-4">
+                                <div class="flex justify-between mb-1">
+                                    <span class="font-bold text-gray-900">${t.subject}</span>
+                                    <span class="text-xs font-bold uppercase ${t.status === 'open' ? 'text-green-600' : 'text-gray-400'}">${t.status}</span>
+                                </div>
+                                <p class="text-sm text-gray-500 line-clamp-2">${t.description || 'No description'}</p>
+                                <div class="mt-2 flex justify-between items-center">
+                                    <span class="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600 uppercase">${t.priority} Priority</span>
+                                    <span class="text-xs text-gray-400">${t.createdAt ? new Date(t.createdAt.seconds*1000).toLocaleDateString() : ''}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }, error => {
+                    console.log("Tickets query error:", error);
+                });
+            activeListeners.push(unsub);
+        }
+
+        // --- 8. UPDATE REQUEST FUNCTIONS ---
+
+        function createUpdateRequestForOrder(orderId) {
+            openModal(`
+                <div class="p-6">
+                    <h3 class="text-xl font-bold mb-4">Request Order Update</h3>
+                    <input id="update-title" class="ios-input mb-3" placeholder="Update Title">
+                    <textarea id="update-desc" class="ios-input mb-3 h-24" placeholder="Describe what you want to update..."></textarea>
+                    <input id="update-price" type="number" class="ios-input mb-4" placeholder="Your proposed price ($)">
+                    <button onclick="submitUpdateRequest('${orderId}')" class="ios-btn w-full bg-purple-600 text-white py-3 shadow-lg shadow-purple-500/30">Submit Update Request</button>
+                </div>
+            `);
+        }
+
+        async function submitUpdateRequest(orderId) {
+            const title = document.getElementById('update-title').value;
+            const desc = document.getElementById('update-desc').value;
+            const price = document.getElementById('update-price').value;
+
+            if(!title) return showToast('Title is required', 'error');
+
+            try {
+                // Add to updateRequests array in order document
+                const orderRef = db.collection('orders').doc(orderId);
+                const orderDoc = await orderRef.get();
+                
+                if (!orderDoc.exists) {
+                    showToast('Order not found', 'error');
+                    return;
+                }
+
+                const currentUpdates = orderDoc.data().updateRequests || [];
+                
+                const updateRequest = {
+                    id: `update_${Date.now()}`,
+                    title,
+                    description: desc,
+                    proposedPrice: Number(price) || 0,
+                    status: 'pending',
+                    requestedBy: currentUser.uid,
+                    requestedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    clientEmail: currentUser.email
+                };
+
+                await orderRef.update({
+                    updateRequests: [...currentUpdates, updateRequest]
+                });
+
+                // Also create a payment request if price > 0
+                if (price > 0) {
+                    await db.collection('payments').add({
+                        clientUid: currentUser.uid,
+                        clientEmail: currentUser.email,
+                        orderId: orderId,
+                        title: `Update: ${title}`,
+                        reason: `Update request for order: ${orderDoc.data().title}`,
+                        amount: Number(price),
+                        status: 'pending',
+                        type: 'update_request',
+                        updateRequestId: updateRequest.id,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+
+                closeModal();
+                showToast('Update request submitted successfully', 'success');
+                
+                // Refresh orders view
+                if (currentView === 'orders') router('orders');
+                
+            } catch (e) {
+                showToast('Error: ' + e.message, 'error');
+            }
+        }
+
+        function viewOrderUpdates(orderId) {
+            openModal(`
+                <div class="p-6 max-h-[80vh] overflow-y-auto">
+                    <h3 class="text-xl font-bold mb-4">Update Requests</h3>
+                    <div id="updates-list" class="space-y-3">
+                        <div class="flex justify-center py-4">
+                            <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+            `);
+
+            // Load updates for this order
+            db.collection('orders').doc(orderId).get().then(doc => {
+                const list = document.getElementById('updates-list');
+                if (!doc.exists) {
+                    list.innerHTML = '<div class="text-center text-gray-400 py-4">Order not found</div>';
+                    return;
+                }
+
+                const updates = doc.data().updateRequests || [];
+                if (updates.length === 0) {
+                    list.innerHTML = '<div class="text-center text-gray-400 py-4">No update requests yet</div>';
+                    return;
+                }
+
+                list.innerHTML = '';
+                updates.forEach(update => {
+                    const statusColor = update.status === 'approved' ? 'badge-success' : 
+                                      update.status === 'rejected' ? 'badge-error' : 
+                                      'badge-pending';
+                    
+                    list.innerHTML += `
+                        <div class="ios-card p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-bold">${update.title}</h4>
+                                <span class="text-xs font-bold px-2 py-1 rounded-full ${statusColor}">
+                                    ${update.status}
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-2">${update.description}</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium">Proposed: $${update.proposedPrice || 0}</span>
+                                <span class="text-xs text-gray-400">
+                                    ${update.requestedAt ? new Date(update.requestedAt.seconds * 1000).toLocaleDateString() : ''}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        // --- 9. PAYMENT FUNCTIONS ---
+
+        async function markPaymentAsPaid(paymentId) {
+            try {
+                await db.collection('payments').doc(paymentId).update({
+                    status: 'pending_confirm',
+                    markedPaidAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    markedPaidBy: currentUser.uid
+                });
+                showToast('Payment marked as paid. Waiting for agent confirmation.', 'success');
+            } catch (e) {
+                showToast('Error: ' + e.message, 'error');
+            }
+        }
+
+        function viewPaymentQR(paymentId) {
+            db.collection('payments').doc(paymentId).get().then(doc => {
+                if (!doc.exists) {
+                    showToast('Payment not found', 'error');
+                    return;
+                }
+
+                const payment = doc.data();
+                const qrData = `researchcraft://payment/${paymentId}/${payment.amount}/${currentUser.email}`;
+                
+                openModal(`
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold mb-4 text-center">Payment QR Code</h3>
+                        
+                        <div class="qr-container mb-4" id="qr-code-container"></div>
+                        
+                        <div class="text-center mb-6">
+                            <p class="font-bold text-lg">$${payment.amount}</p>
+                            <p class="text-sm text-gray-600">${payment.title}</p>
+                            <p class="text-xs text-gray-400 mt-1">Scan to pay</p>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <button onclick="markPaymentAsPaid('${paymentId}')" class="ios-btn w-full bg-blue-600 text-white py-3">
+                                <i class="fas fa-check-circle mr-2"></i> I Have Paid
+                            </button>
+                            <button onclick="closeModal()" class="ios-btn w-full bg-gray-100 text-gray-600 py-3">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                `);
+
+                // Generate QR Code
+                new QRCode(document.getElementById("qr-code-container"), {
+                    text: qrData,
+                    width: 180,
+                    height: 180,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            });
+        }
+
+        function openPaymentDetails(paymentId) {
+            db.collection('payments').doc(paymentId).get().then(doc => {
+                if (!doc.exists) {
+                    showToast('Payment not found', 'error');
+                    return;
+                }
+
+                const payment = doc.data();
+                const statusColor = payment.status === 'pending' ? 'text-amber-600' : 
+                                 payment.status === 'confirmed' ? 'text-green-600' : 
+                                 payment.status === 'pending_confirm' ? 'text-blue-600' : 
+                                 'text-red-600';
+
+                openModal(`
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold mb-4">Payment Details</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-sm text-gray-500">Title</p>
+                                <p class="font-medium">${payment.title}</p>
+                            </div>
+                            
+                            <div>
+                                <p class="text-sm text-gray-500">Reason</p>
+                                <p class="font-medium">${payment.reason || 'N/A'}</p>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-sm text-gray-500">Amount</p>
+                                    <p class="text-2xl font-bold">$${payment.amount}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Status</p>
+                                    <p class="font-bold uppercase ${statusColor}">${payment.status}</p>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <p class="text-sm text-gray-500">Payment ID</p>
+                                <p class="text-xs font-mono bg-gray-100 p-2 rounded">${paymentId}</p>
+                            </div>
+                            
+                            <div>
+                                <p class="text-sm text-gray-500">Created</p>
+                                <p class="font-medium">${payment.createdAt ? new Date(payment.createdAt.seconds * 1000).toLocaleString() : 'N/A'}</p>
+                            </div>
+                            
+                            ${payment.markedPaidAt ? `
+                                <div>
+                                    <p class="text-sm text-gray-500">Marked Paid</p>
+                                    <p class="font-medium">${new Date(payment.markedPaidAt.seconds * 1000).toLocaleString()}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        ${payment.status === 'pending' ? `
+                            <div class="mt-6 space-y-3">
+                                <button onclick="viewPaymentQR('${paymentId}')" class="ios-btn w-full bg-blue-600 text-white py-3">
+                                    <i class="fas fa-qrcode mr-2"></i> View QR Code
+                                </button>
+                                <button onclick="markPaymentAsPaid('${paymentId}')" class="ios-btn w-full bg-green-600 text-white py-3">
+                                    <i class="fas fa-check mr-2"></i> Mark as Paid
+                                </button>
+                            </div>
+                        ` : ''}
+                        
+                        <button onclick="closeModal()" class="ios-btn w-full bg-gray-100 text-gray-600 py-3 mt-4">
+                            Close
+                        </button>
+                    </div>
+                `);
+            });
+        }
+
+        // --- 10. ORDER CREATION MODAL ---
+
+        function openCreateOrderModal() {
+            openModal(`
+                <div class="p-6 pb-10">
+                    <h3 class="text-xl font-bold mb-4">Create Order</h3>
+                    <input id="new-order-title" class="ios-input mb-3" placeholder="Project Title">
+                    <textarea id="new-order-desc" class="ios-input mb-3 h-24" placeholder="Project Description"></textarea>
+                    <input id="new-order-budget" type="number" class="ios-input mb-4" placeholder="Budget ($)">
+                    <button onclick="submitOrder()" class="ios-btn w-full bg-blue-600 text-white py-3 shadow-lg shadow-blue-500/30">Submit Request</button>
+                </div>
+            `);
+        }
+
+        async function submitOrder() {
+            const title = document.getElementById('new-order-title').value;
+            const desc = document.getElementById('new-order-desc').value;
+            const budget = document.getElementById('new-order-budget').value;
+
+            if(!title) return showToast('Title is required', 'error');
+
+            try {
+                await db.collection('orders').add({
+                    clientUid: currentUser.uid,
+                    clientEmail: currentUser.email,
+                    title,
+                    description: desc,
+                    budget: Number(budget) || 0,
+                    status: 'pending',
+                    assignedTo: null, // Will be assigned by agent
+                    updateRequests: [],
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                closeModal();
+                showToast('Order requested successfully', 'success');
+                router('orders');
+            } catch (e) {
+                showToast('Error: ' + e.message, 'error');
+            }
+        }
+
+        function openCreateUpdateRequestModal() {
+            // First fetch orders to select from
+            db.collection('orders')
+                .where('clientUid', '==', currentUser.uid)
+                .get()
+                .then(snap => {
+                    if (snap.empty) {
+                        showToast('No orders found. Create an order first.', 'error');
+                        return;
+                    }
+
+                    let options = '';
+                    snap.forEach(doc => {
+                        const data = doc.data();
+                        options += `<option value="${doc.id}">${data.title}</option>`;
+                    });
+
+                    openModal(`
+                        <div class="p-6">
+                            <h3 class="text-xl font-bold mb-4">Create Update Request</h3>
+                            
+                            <div class="mb-3">
+                                <label class="text-sm text-gray-600 mb-1 block">Select Order</label>
+                                <select id="update-order-select" class="ios-input bg-white">
+                                    ${options}
+                                </select>
+                            </div>
+                            
+                            <input id="update-title" class="ios-input mb-3" placeholder="Update Title">
+                            <textarea id="update-desc" class="ios-input mb-3 h-24" placeholder="Describe what you want to update..."></textarea>
+                            <input id="update-price" type="number" class="ios-input mb-4" placeholder="Your proposed price ($)">
+                            
+                            <button onclick="submitUpdateRequestFromModal()" class="ios-btn w-full bg-purple-600 text-white py-3 shadow-lg shadow-purple-500/30">Submit Update Request</button>
+                        </div>
+                    `);
+                });
+        }
+
+        function submitUpdateRequestFromModal() {
+            const orderId = document.getElementById('update-order-select').value;
+            submitUpdateRequest(orderId);
+        }
+
+        // --- 11. CHAT SYSTEM ---
+
+        function openSalesChat() {
+            const chatId = `sales_${currentUser.uid}`;
+            openChatInterface(chatId, 'Sales Team');
+        }
+
+        function openOrderChat(orderId, orderTitle) {
+            const chatId = `order_${orderId}`;
+            openChatInterface(chatId, `Order: ${orderTitle}`);
+        }
+
+        function openChatInterface(chatId, title) {
+            // Create chat doc if not exists
+            db.collection('chats').doc(chatId).set({
+                lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+                participants: [currentUser.uid],
+                type: chatId.startsWith('sales_') ? 'sales' : 'order'
+            }, { merge: true });
+
+            openModal(`
+                <div class="flex flex-col h-[85vh] w-full bg-white rounded-t-2xl overflow-hidden">
+                    <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-white z-10">
+                        <h3 class="font-bold truncate max-w-[80%]">${title}</h3>
+                        <button onclick="closeModal()" class="text-gray-400"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+                        <div class="flex justify-center"><i class="fas fa-circle-notch fa-spin text-gray-300"></i></div>
+                    </div>
+                    <div class="p-3 bg-white border-t border-gray-100 safe-bottom-margin">
+                        <form onsubmit="sendChatMessage(event, '${chatId}')" class="flex space-x-2">
+                            <input id="chat-input" class="ios-input flex-1" placeholder="Type a message..." autocomplete="off">
+                            <button type="submit" class="w-12 h-12 bg-blue-500 rounded-xl text-white flex items-center justify-center shadow-md">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            `);
+
+            const msgContainer = document.getElementById('chat-messages');
+            
+            const unsubChat = db.collection('chats').doc(chatId).collection('messages')
+                .orderBy('timestamp', 'asc')
+                .onSnapshot(snap => {
+                    msgContainer.innerHTML = '';
+                    if(snap.empty) {
+                         msgContainer.innerHTML = '<div class="text-center text-xs text-gray-400 mt-4">Start the conversation...</div>';
+                    }
+                    snap.forEach(doc => {
+                        const msg = doc.data();
+                        const isMe = msg.senderUid === currentUser.uid;
+                        
+                        msgContainer.innerHTML += `
+                            <div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
+                                <div class="max-w-[75%] px-4 py-2 rounded-2xl text-sm ${isMe ? 'bg-blue-500 text-white rounded-br-none' : 'bg-white border border-gray-100 text-gray-800 rounded-bl-none shadow-sm'}">
+                                    ${msg.text}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    msgContainer.scrollTop = msgContainer.scrollHeight;
+                });
+        }
+
+        async function sendChatMessage(e, chatId) {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if(!text) return;
+
+            input.value = '';
+
+            await db.collection('chats').doc(chatId).collection('messages').add({
+                text: text,
+                senderUid: currentUser.uid,
+                senderEmail: currentUser.email,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                type: 'text'
+            });
+
+            await db.collection('chats').doc(chatId).update({
+                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+
+        // --- 12. ORDER DETAILS ---
+
+        function openOrderDetails(orderId) {
+            db.collection('orders').doc(orderId).get().then(doc => {
+                if (!doc.exists) {
+                    showToast('Order not found', 'error');
+                    return;
+                }
+
+                const order = doc.data();
+                const statusColor = order.status === 'completed' ? 'badge-success' : 
+                                 order.status === 'pending' ? 'badge-pending' : 
+                                 order.status === 'in-progress' ? 'badge-blue' : 'badge-neutral';
+
+                openModal(`
+                    <div class="p-6 max-h-[80vh] overflow-y-auto">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-xl font-bold">Order Details</h3>
+                            <span class="text-xs font-bold px-3 py-1 rounded-full ${statusColor}">
+                                ${order.status}
+                            </span>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-sm text-gray-500">Title</p>
+                                <p class="font-bold text-lg">${order.title}</p>
+                            </div>
+                            
+                            <div>
+                                <p class="text-sm text-gray-500">Description</p>
+                                <p class="text-gray-700">${order.description}</p>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-sm text-gray-500">Budget</p>
+                                    <p class="font-bold">$${order.budget || 0}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Created</p>
+                                    <p class="font-medium">${order.createdAt ? new Date(order.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</p>
+                                </div>
+                            </div>
+                            
+                            ${order.assignedTo ? `
+                                <div>
+                                    <p class="text-sm text-gray-500">Assigned To</p>
+                                    <p class="font-medium">Agent</p>
+                                </div>
+                            ` : ''}
+                            
+                            <div class="mt-6">
+                                <div class="flex justify-between items-center mb-2">
+                                    <p class="text-sm font-medium">Update Requests</p>
+                                    <span class="text-xs bg-gray-100 px-2 py-1 rounded">${order.updateRequests ? order.updateRequests.length : 0}</span>
+                                </div>
+                                
+                                ${order.updateRequests && order.updateRequests.length > 0 ? `
+                                    <div class="space-y-2">
+                                        ${order.updateRequests.slice(0, 3).map(update => `
+                                            <div class="ios-card p-3">
+                                                <p class="font-medium text-sm">${update.title}</p>
+                                                <p class="text-xs text-gray-500">Status: ${update.status} • $${update.proposedPrice || 0}</p>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : `
+                                    <p class="text-sm text-gray-400">No update requests yet</p>
+                                `}
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 space-y-3">
+                            <button onclick="openOrderChat('${orderId}', '${order.title}')" class="ios-btn w-full bg-blue-600 text-white py-3">
+                                <i class="fas fa-comments mr-2"></i> Chat with Agent
+                            </button>
+                            <button onclick="createUpdateRequestForOrder('${orderId}')" class="ios-btn w-full bg-purple-600 text-white py-3">
+                                <i class="fas fa-edit mr-2"></i> Request Update
+                            </button>
+                            <button onclick="closeModal()" class="ios-btn w-full bg-gray-100 text-gray-600 py-3">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        // --- 13. UTILITY FUNCTIONS ---
+
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const el = document.createElement('div');
+            
+            let bg = 'bg-gray-800';
+            let icon = 'fa-info-circle';
+            
+            if(type === 'success') { bg = 'bg-green-500'; icon = 'fa-check-circle'; }
+            if(type === 'error') { bg = 'bg-red-500'; icon = 'fa-exclamation-triangle'; }
+            if(type === 'warning') { bg = 'bg-amber-500'; icon = 'fa-exclamation-circle'; }
+
+            el.className = `${bg} text-white px-4 py-3 rounded-full shadow-xl flex items-center space-x-2 text-sm font-medium transform transition-all duration-300 translate-y-[-100%] opacity-0`;
+            el.innerHTML = `<i class="fas ${icon}"></i> <span>${msg}</span>`;
+            
+            container.appendChild(el);
+
+            requestAnimationFrame(() => {
+                el.classList.remove('translate-y-[-100%]', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                el.classList.add('opacity-0', '-translate-y-2');
+                setTimeout(() => el.remove(), 300);
+            }, 3000);
+        }
+
+        function openModal(contentHtml) {
+            const container = document.getElementById('modal-container');
+            container.innerHTML = `
+                <div class="bg-white w-full max-w-lg mx-auto sm:rounded-t-2xl rounded-t-2xl shadow-2xl ios-slide-up pointer-events-auto" style="max-height: 90vh; display:flex; flex-direction:column;">
+                    <div class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 mb-1 sm:hidden"></div>
+                    ${contentHtml}
+                </div>
+                <div class="fixed inset-0 bg-black/40 z-[-1]" onclick="closeModal()"></div>
+            `;
+            container.classList.remove('pointer-events-none');
+        }
+
+        function closeModal() {
+            const container = document.getElementById('modal-container');
+            container.innerHTML = '';
+            container.classList.add('pointer-events-none');
+        }
+    </script>
+</body>
+</html>

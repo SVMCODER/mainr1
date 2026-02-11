@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Research Craft | Client Portal</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root {
+            --primary: #007AFF;
+            --bg-base: #F2F2F7;
+            --bg-card: #FFFFFF;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-base);
+            color: #1C1C1E;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none;
+        }
+
+        /* Utilities */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .safe-top { padding-top: env(safe-area-inset-top); }
+        .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        .safe-bottom-margin { margin-bottom: env(safe-area-inset-bottom); }
+
+        /* Animations */
+        .ios-slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .ios-fade-in { animation: fadeIn 0.2s ease-out forwards; }
+        
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Components */
+        .ios-card { background: var(--bg-card); border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .ios-input { background: #F2F2F7; border: none; border-radius: 10px; padding: 12px 16px; font-size: 16px; width: 100%; outline: none; }
+        .ios-btn { border-radius: 12px; font-weight: 600; transition: transform 0.1s, opacity 0.1s; }
+        .ios-btn:active { transform: scale(0.98); opacity: 0.8; }
+        
+        .tab-item.active { color: var(--primary); }
+        
+        /* Status Badges */
+        .badge-pending { background: #FF950020; color: #FF9500; }
+        .badge-success { background: #34C75920; color: #34C759; }
+        .badge-review { background: #5856D620; color: #5856D6; }
+        .badge-blue { background: #007AFF20; color: #007AFF; }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col">
+
+    <div id="auth-screen" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6 hidden">
+        <div class="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30">
+            <i class="fas fa-flask text-white text-3xl"></i>
+        </div>
+        <h1 class="text-2xl font-bold mb-2">Client Portal</h1>
+        <p class="text-gray-500 mb-8 text-center">Manage orders & payments</p>
+
+        <div class="w-full max-w-sm space-y-4">
+            <input type="email" id="auth-email" placeholder="Email" class="ios-input" value="client@example.com">
+            <input type="password" id="auth-password" placeholder="Password" class="ios-input" value="password123">
+            <button onclick="handleLogin()" class="ios-btn w-full bg-[#007AFF] text-white py-3.5 text-lg shadow-lg">Sign In</button>
+            <button onclick="handleRegister()" class="ios-btn w-full bg-gray-100 text-blue-500 py-3.5 text-lg">Create Account</button>
+        </div>
+    </div>
+
+    <div id="app-container" class="flex-1 flex flex-col relative hidden">
+        
+        <header class="bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0 z-30 safe-top">
+            <div class="px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-xs">RC</span>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-gray-900 leading-none">Dashboard</h1>
+                        <span id="header-user-email" class="text-[10px] text-gray-500 font-medium">Loading...</span>
+                    </div>
+                </div>
+                <button onclick="handleLogout()" class="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center text-red-500">
+                    <i class="fas fa-power-off"></i>
+                </button>
+            </div>
+        </header>
+
+        <main id="main-content" class="flex-1 overflow-y-auto hide-scrollbar pb-24 px-4 pt-4">
+            </main>
+
+        <nav class="bg-white/90 backdrop-blur-xl border-t border-gray-200 fixed bottom-0 w-full z-40 safe-bottom">
+            <div class="flex justify-around items-center h-16 safe-bottom-margin">
+                <button onclick="router('dashboard')" class="tab-item active flex flex-col items-center justify-center w-full" data-tab="dashboard">
+                    <i class="fas fa-chart-pie text-xl mb-1"></i> <span class="text-[10px]">Home</span>
+                </button>
+                <button onclick="router('orders')" class="tab-item flex flex-col items-center justify-center w-full" data-tab="orders">
+                    <i class="fas fa-folder-open text-xl mb-1"></i> <span class="text-[10px]">Orders</span>
+                </button>
+                <button onclick="router('payments')" class="tab-item flex flex-col items-center justify-center w-full" data-tab="payments">
+                    <i class="fas fa-credit-card text-xl mb-1"></i> <span class="text-[10px]">Payments</span>
+                </button>
+                <button onclick="router('support')" class="tab-item flex flex-col items-center justify-center w-full" data-tab="support">
+                    <i class="fas fa-life-ring text-xl mb-1"></i> <span class="text-[10px]">Support</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+
+    <div id="modal-container" class="fixed inset-0 z-50 pointer-events-none flex items-end justify-center sm:items-center"></div>
+    <div id="toast-container" class="fixed top-2 left-0 right-0 z-[60] flex flex-col items-center space-y-2 pointer-events-none safe-top"></div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBDeDc6pWhghXmGYg9QYQ3nVAGTpo1u5AM",
+            authDomain: "research-craft.firebaseapp.com",
+            projectId: "research-craft",
+            storageBucket: "research-craft.firebasestorage.app",
+            messagingSenderId: "284823836570",
+            appId: "1:284823836570:web:fb0d93cdf92368525d8c23",
+            measurementId: "G-6H5BS98612"
+        };
+
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let currentUser = null;
+        let activeListeners = [];
+        let currentView = 'dashboard';
+
+        // --- AUTHENTICATION ---
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                if (userDoc.exists && userDoc.data().role === 'client') {
+                    currentUser = user;
+                    document.getElementById('header-user-email').textContent = user.email;
+                    document.getElementById('auth-screen').classList.add('hidden');
+                    document.getElementById('app-container').classList.remove('hidden');
+                    router('dashboard');
+                } else if (!userDoc.exists) {
+                    await db.collection('users').doc(user.uid).set({
+                        email: user.email,
+                        role: 'client',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    currentUser = user;
+                    document.getElementById('header-user-email').textContent = user.email;
+                    document.getElementById('auth-screen').classList.add('hidden');
+                    document.getElementById('app-container').classList.remove('hidden');
+                    router('dashboard');
+                } else {
+                    showToast('Client Access Only', 'error');
+                    auth.signOut();
+                }
+            } else {
+                currentUser = null;
+                activeListeners.forEach(u => u());
+                activeListeners = [];
+                document.getElementById('app-container').classList.add('hidden');
+                document.getElementById('auth-screen').classList.remove('hidden');
+            }
+        });
+
+        async function handleLogin() {
+            try {
+                await auth.signInWithEmailAndPassword(
+                    document.getElementById('auth-email').value,
+                    document.getElementById('auth-password').value
+                );
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        async function handleRegister() {
+            try {
+                await auth.createUserWithEmailAndPassword(
+                    document.getElementById('auth-email').value,
+                    document.getElementById('auth-password').value
+                );
+                showToast('Account created', 'success');
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        function handleLogout() { auth.signOut(); }
+
+        // --- ROUTING ---
+        function router(view) {
+            currentView = view;
+            document.querySelectorAll('.tab-item').forEach(el => {
+                el.classList.toggle('active', el.dataset.tab === view);
+            });
+            
+            const main = document.getElementById('main-content');
+            main.innerHTML = '<div class="flex justify-center pt-10"><i class="fas fa-spinner fa-spin text-blue-500 text-2xl"></i></div>';
+            
+            // Clean listeners
+            activeListeners.forEach(u => u());
+            activeListeners = [];
+
+            if(view === 'dashboard') loadDashboard(main);
+            if(view === 'orders') loadOrders(main);
+            if(view === 'payments') loadPayments(main);
+            if(view === 'support') loadSupport(main);
+        }
+
+        // --- DASHBOARD ---
+        function loadDashboard(container) {
+            container.innerHTML = `
+                <div class="space-y-6 ios-fade-in">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="ios-card p-4 bg-blue-500 text-white">
+                            <p class="text-xs opacity-80 font-bold uppercase">Active Orders</p>
+                            <h2 class="text-3xl font-bold mt-1" id="dash-orders">0</h2>
+                        </div>
+                        <div class="ios-card p-4">
+                            <p class="text-xs text-gray-500 font-bold uppercase">Pending Due</p>
+                            <h2 class="text-3xl font-bold mt-1 text-gray-900" id="dash-due">$0</h2>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg mb-3 px-1">Recent Updates</h3>
+                        <div id="dash-activity" class="space-y-3"></div>
+                    </div>
+                </div>
+            `;
+
+            // Live Counters (Client-side sorting/filtering to fix index error)
+            const unsubOrders = db.collection('orders').where('clientUid', '==', currentUser.uid).onSnapshot(snap => {
+                const active = snap.docs.filter(d => ['pending','in-progress','review'].includes(d.data().status)).length;
+                document.getElementById('dash-orders').textContent = active;
+                
+                const list = document.getElementById('dash-activity');
+                let docs = snap.docs.map(d => ({...d.data(), id: d.id}));
+                // Client-side Sort
+                docs.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                
+                list.innerHTML = docs.slice(0,3).map(d => `
+                    <div class="ios-card p-4 flex justify-between items-center" onclick="router('orders')">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-sm">${d.title}</h4>
+                                <p class="text-[10px] text-gray-500 uppercase">${d.status}</p>
+                            </div>
+                        </div>
+                    </div>
+                `).join('') || '<div class="text-center text-gray-400 py-4">No recent activity</div>';
+            });
+            activeListeners.push(unsubOrders);
+
+            const unsubPay = db.collection('payments').where('clientUid', '==', currentUser.uid).onSnapshot(snap => {
+                const due = snap.docs.filter(d => d.data().status === 'pending')
+                    .reduce((sum, d) => sum + (Number(d.data().amount) || 0), 0);
+                document.getElementById('dash-due').textContent = `$${due}`;
+            });
+            activeListeners.push(unsubPay);
+        }
+
+        // --- ORDERS ---
+        function loadOrders(container) {
+            container.innerHTML = `
+                <div class="space-y-4 ios-fade-in pb-20">
+                    <div class="flex justify-between items-center px-1">
+                        <h2 class="text-2xl font-bold">Orders</h2>
+                        <button onclick="openCreateOrderModal()" class="bg-blue-600 text-white w-8 h-8 rounded-full shadow-lg flex items-center justify-center">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <div id="orders-list" class="space-y-3"></div>
+                </div>
+            `;
+
+            const unsub = db.collection('orders').where('clientUid', '==', currentUser.uid).onSnapshot(snap => {
+                const list = document.getElementById('orders-list');
+                let docs = snap.docs.map(d => ({...d.data(), id: d.id}));
+                // FIX: Client Side Sort
+                docs.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+                if(docs.length === 0) {
+                    list.innerHTML = '<div class="text-center text-gray-400 mt-10">No orders found.</div>';
+                    return;
+                }
+
+                list.innerHTML = docs.map(d => `
+                    <div class="ios-card overflow-hidden">
+                        <div class="p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider bg-gray-100 text-gray-600">
+                                    ${d.status}
+                                </span>
+                                <span class="text-xs text-gray-400">${d.createdAt ? new Date(d.createdAt.seconds*1000).toLocaleDateString() : ''}</span>
+                            </div>
+                            <h3 class="font-bold text-lg mb-1">${d.title}</h3>
+                            <p class="text-sm text-gray-500 line-clamp-2">${d.description}</p>
+                        </div>
+                        <div class="bg-gray-50 px-4 py-3 flex border-t border-gray-100">
+                            <button onclick="openOrderChat('${d.id}', '${d.title}')" class="flex-1 text-sm font-semibold text-blue-600 flex items-center justify-center space-x-2">
+                                <i class="fas fa-comments"></i> <span>Chat Agent</span>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            });
+            activeListeners.push(unsub);
+        }
+
+        // --- PAYMENTS (UPDATED) ---
+        function loadPayments(container) {
+            container.innerHTML = `
+                <div class="space-y-4 ios-fade-in pb-20">
+                    <h2 class="text-2xl font-bold px-1">Payments</h2>
+                    <div id="payments-list" class="space-y-3"></div>
+                </div>
+            `;
+
+            const unsub = db.collection('payments').where('clientUid', '==', currentUser.uid).onSnapshot(snap => {
+                const list = document.getElementById('payments-list');
+                let docs = snap.docs.map(d => ({...d.data(), id: d.id}));
+                docs.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+                if(docs.length === 0) {
+                    list.innerHTML = '<div class="text-center text-gray-400 mt-10">No payments yet.</div>';
+                    return;
+                }
+
+                list.innerHTML = docs.map(p => {
+                    const isPending = p.status === 'pending';
+                    const isPaid = p.status === 'verified';
+                    const badgeClass = isPaid ? 'badge-success' : (p.status === 'review' ? 'badge-review' : 'badge-pending');
+                    
+                    return `
+                    <div class="ios-card p-4">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h4 class="font-bold text-gray-900">${p.title}</h4>
+                                <p class="text-xs text-gray-500">${p.reason || 'Service Payment'}</p>
+                            </div>
+                            <span class="text-[10px] font-bold px-2 py-1 rounded-full uppercase ${badgeClass}">${p.status}</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-4">
+                            <span class="text-2xl font-bold">$${p.amount}</span>
+                            ${isPending ? `
+                                <button onclick="openPaymentModal('${p.id}', '${p.amount}', '${p.title}')" class="bg-black text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg active:scale-95 transition-transform">
+                                    Pay Now
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `}).join('');
+            });
+            activeListeners.push(unsub);
+        }
+
+        function openPaymentModal(pid, amount, title) {
+            // Generate QR Code URL (Using QuickChart API for clean simple QR)
+            const qrUrl = `https://quickchart.io/qr?text=PAY_ID_${pid}_AMT_${amount}&size=200`;
+            
+            openModal(`
+                <div class="p-6 text-center">
+                    <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4"></div>
+                    <h3 class="text-lg font-bold mb-1">Payment Request</h3>
+                    <p class="text-gray-500 text-sm mb-6">${title}</p>
+                    
+                    <div class="bg-white p-4 rounded-xl border-2 border-dashed border-gray-200 inline-block mb-6">
+                        <img src="${qrUrl}" alt="Payment QR" class="w-48 h-48 mix-blend-multiply">
+                    </div>
+                    
+                    <h2 class="text-3xl font-bold mb-6">$${amount}</h2>
+                    
+                    <div class="space-y-3 w-full">
+                        <button onclick="markAsPaid('${pid}')" class="ios-btn w-full bg-blue-600 text-white py-3.5 shadow-lg shadow-blue-500/30">
+                            I Have Paid
+                        </button>
+                        <button onclick="closeModal()" class="ios-btn w-full text-gray-500 py-3">Cancel</button>
+                    </div>
+                </div>
+            `);
+        }
+
+        async function markAsPaid(pid) {
+            try {
+                await db.collection('payments').doc(pid).update({
+                    status: 'review',
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                closeModal();
+                showToast('Marked as paid. Waiting for confirmation.', 'success');
+            } catch(e) {
+                showToast('Error updating payment', 'error');
+            }
+        }
+
+        // --- SUPPORT & OTHERS ---
+        function loadSupport(container) {
+            container.innerHTML = `
+                <div class="space-y-4 ios-fade-in pb-20">
+                    <h2 class="text-2xl font-bold px-1">Support Tickets</h2>
+                    <button onclick="createTicket()" class="w-full ios-card p-4 text-center font-semibold text-blue-600">
+                        + Open New Ticket
+                    </button>
+                    <div id="tickets-list" class="space-y-3"></div>
+                </div>
+            `;
+            
+            const unsub = db.collection('tickets').where('clientUid', '==', currentUser.uid).onSnapshot(snap => {
+                const list = document.getElementById('tickets-list');
+                let docs = snap.docs.map(d => ({...d.data(), id: d.id}));
+                docs.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                
+                list.innerHTML = docs.map(t => `
+                    <div class="ios-card p-4">
+                        <div class="flex justify-between mb-1">
+                            <span class="font-bold">${t.subject}</span>
+                            <span class="text-xs font-bold uppercase ${t.status==='open'?'text-green-600':'text-gray-400'}">${t.status}</span>
+                        </div>
+                        <p class="text-sm text-gray-500">${t.description}</p>
+                    </div>
+                `).join('');
+            });
+            activeListeners.push(unsub);
+        }
+
+        async function createTicket() {
+            const open = await db.collection('tickets').where('clientUid','==',currentUser.uid).where('status','==','open').get();
+            if(!open.empty) return showToast('Resolve existing ticket first', 'error');
+            
+            openModal(`
+                <div class="p-6">
+                    <h3 class="font-bold mb-4">New Ticket</h3>
+                    <input id="tick-sub" class="ios-input mb-3" placeholder="Subject">
+                    <textarea id="tick-desc" class="ios-input mb-4 h-24" placeholder="Description"></textarea>
+                    <button onclick="submitTicket()" class="ios-btn w-full bg-black text-white py-3">Submit</button>
+                </div>
+            `);
+        }
+
+        async function submitTicket() {
+            const sub = document.getElementById('tick-sub').value;
+            const desc = document.getElementById('tick-desc').value;
+            if(!sub) return;
+            await db.collection('tickets').add({
+                clientUid: currentUser.uid, 
+                subject: sub, description: desc, 
+                status: 'open', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            closeModal();
+        }
+
+        // --- CHAT ---
+        function openOrderChat(oid, title) {
+            const chatId = `order_${oid}`;
+            openModal(`
+                <div class="flex flex-col h-[85vh] w-full bg-white rounded-t-2xl">
+                    <div class="p-4 border-b flex justify-between bg-white rounded-t-2xl z-10">
+                        <h3 class="font-bold truncate w-3/4">Chat: ${title}</h3>
+                        <button onclick="closeModal()" class="text-gray-400"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div id="chat-msgs" class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50"></div>
+                    <div class="p-3 bg-white border-t safe-bottom-margin">
+                        <form onsubmit="sendMsg(event, '${chatId}')" class="flex space-x-2">
+                            <input id="chat-in" class="ios-input flex-1" placeholder="Type..." autocomplete="off">
+                            <button type="submit" class="w-12 h-12 bg-blue-500 rounded-xl text-white"><i class="fas fa-paper-plane"></i></button>
+                        </form>
+                    </div>
+                </div>
+            `);
+
+            // Initialize chat doc if missing
+            db.collection('chats').doc(chatId).set({
+                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+
+            const unsub = db.collection('chats').doc(chatId).collection('messages').orderBy('timestamp','asc').onSnapshot(snap => {
+                const div = document.getElementById('chat-msgs');
+                if(!div) return;
+                div.innerHTML = snap.docs.map(d => {
+                    const m = d.data();
+                    const isMe = m.senderUid === currentUser.uid;
+                    return `<div class="flex ${isMe?'justify-end':'justify-start'}"><div class="px-4 py-2 rounded-2xl text-sm max-w-[75%] ${isMe?'bg-blue-500 text-white rounded-br-none':'bg-white border text-gray-800 rounded-bl-none'}">${m.text}</div></div>`;
+                }).join('');
+                div.scrollTop = div.scrollHeight;
+            });
+            // Note: Listener leaks on close in this simple implementation
+        }
+
+        async function sendMsg(e, cid) {
+            e.preventDefault();
+            const inp = document.getElementById('chat-in');
+            const txt = inp.value.trim();
+            if(!txt) return;
+            inp.value = '';
+            await db.collection('chats').doc(cid).collection('messages').add({
+                text: txt, senderUid: currentUser.uid, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+
+        // --- GLOBAL UTILS ---
+        function openCreateOrderModal() {
+            openModal(`
+                <div class="p-6">
+                    <h3 class="font-bold mb-4">New Order</h3>
+                    <input id="ord-title" class="ios-input mb-3" placeholder="Title">
+                    <textarea id="ord-desc" class="ios-input mb-4 h-24" placeholder="Description"></textarea>
+                    <button onclick="subOrder()" class="ios-btn w-full bg-blue-600 text-white py-3">Create</button>
+                </div>
+            `);
+        }
+
+        async function subOrder() {
+            const t = document.getElementById('ord-title').value;
+            const d = document.getElementById('ord-desc').value;
+            if(!t) return;
+            await db.collection('orders').add({
+                clientUid: currentUser.uid, title: t, description: d, status: 'pending', 
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            closeModal();
+            router('orders');
+        }
+
+        function showToast(msg, type='info') {
+            const div = document.createElement('div');
+            const bg = type==='success'?'bg-green-500':(type==='error'?'bg-red-500':'bg-gray-800');
+            div.className = `${bg} text-white px-4 py-3 rounded-full shadow-xl flex items-center space-x-2 text-sm font-medium ios-slide-up`;
+            div.innerHTML = `<span>${msg}</span>`;
+            document.getElementById('toast-container').appendChild(div);
+            setTimeout(() => div.remove(), 3000);
+        }
+
+        function openModal(html) {
+            document.getElementById('modal-container').innerHTML = `
+                <div class="bg-white w-full max-w-lg mx-auto rounded-t-2xl shadow-2xl ios-slide-up pointer-events-auto flex flex-col max-h-[90vh]">
+                    <div class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 sm:hidden"></div>
+                    ${html}
+                </div>
+                <div class="fixed inset-0 bg-black/40 z-[-1]" onclick="closeModal()"></div>
+            `;
+            document.getElementById('modal-container').classList.remove('pointer-events-none');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-container').innerHTML = '';
+            document.getElementById('modal-container').classList.add('pointer-events-none');
+        }
+    </script>
+</body>
+</html>

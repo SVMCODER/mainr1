@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Connect Client</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'] },
+                    colors: { ios: { blue: '#007AFF', gray: '#F2F2F7', border: '#E5E5EA' } }
+                }
+            }
+        }
+    </script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen w-full overflow-hidden text-slate-900 select-none">
+
+    <div class="max-w-md mx-auto h-full flex flex-col bg-ios-gray relative shadow-2xl overflow-hidden sm:h-[90vh] sm:mt-[5vh] sm:rounded-3xl sm:border-[8px] sm:border-slate-800">
+        
+        <header class="flex-none h-16 bg-white/90 backdrop-blur-md border-b border-ios-border flex items-center justify-between px-4 z-20 sticky top-0">
+            <h1 class="text-xl font-bold tracking-tight text-black">Research Connect</h1>
+            <div class="flex items-center space-x-5 text-ios">
+                <button class="opacity-50 transition-opacity"><i class="fas fa-bell text-xl"></i></button>
+            </div>
+        </header>
+
+        <main class="flex-1 flex flex-col h-full bg-gray-50 relative overflow-hidden">
+            
+            <div id="section-inbox" class="hidden flex-col h-full">
+                <div class="p-10 text-center text-gray-400">Inbox Module</div>
+            </div>
+
+            <div id="section-payments" class="flex flex-col h-full">
+                <div class="px-6 py-4 bg-white border-b border-gray-200 sticky top-0 z-10">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4">Payments</h2>
+                    <div class="bg-gray-100 p-1 rounded-xl flex font-medium relative">
+                        <div id="pay-tab-bg" class="absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] bg-white rounded-lg shadow-sm transition-all duration-300 ease-out"></div>
+                        <button onclick="switchPaymentTab('unpaid')" class="flex-1 py-1.5 rounded-lg text-sm z-10 transition-colors duration-300 text-slate-800 font-semibold" id="pay-btn-unpaid">Pending</button>
+                        <button onclick="switchPaymentTab('paid')" class="flex-1 py-1.5 rounded-lg text-sm z-10 transition-colors duration-300 text-gray-500" id="pay-btn-paid">History</button>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4 custom-scroll space-y-3">
+                    <div id="payLoader" class="text-center py-10 hidden"><i class="fas fa-circle-notch fa-spin text-gray-400"></i></div>
+                    <div id="unpaid-list" class="space-y-3"></div>
+                    <div id="paid-list" class="space-y-3 hidden"></div>
+                    <div id="pay-empty" class="hidden text-center py-20 text-gray-400"><i class="fas fa-receipt text-2xl mb-2"></i><p>No payments found.</p></div>
+                </div>
+            </div>
+
+            <div id="section-files" class="hidden flex-col h-full">
+                <div class="p-10 text-center text-gray-400">Files Module</div>
+            </div>
+
+        </main>
+
+        <div id="chatModal" class="fixed inset-0 z-[100] hidden" role="dialog">
+            <div onclick="closeChat()" class="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity opacity-0" id="chatBackdrop"></div>
+            <div id="chatPanel" class="absolute bottom-0 w-full h-[95vh] bg-white rounded-t-[30px] shadow-2xl transform translate-y-full transition-transform duration-300 flex flex-col">
+                <div class="px-5 py-4 bg-white/90 backdrop-blur border-b border-gray-100 flex justify-between items-center z-20 rounded-t-[30px]">
+                    <div class="flex items-center space-x-3">
+                        <button onclick="closeChat()" class="text-blue-500 pr-2"><i class="fas fa-chevron-left text-lg"></i></button>
+                        <div class="w-10 h-10 bg-gradient-to-tr from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-sm" id="chatHeaderAvatar">A</div>
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm leading-tight" id="chatHeaderName">Support</h3>
+                            <p class="text-[10px] text-gray-400 uppercase font-bold" id="chatHeaderOrder">#ID</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 scroll-smooth"></div>
+                <div class="p-3 bg-white border-t border-gray-100 pb-8 sm:pb-3">
+                    <div class="flex items-end space-x-2 bg-gray-100 p-1.5 rounded-3xl">
+                        <textarea id="msgInput" rows="1" class="flex-1 bg-transparent border-0 focus:ring-0 text-sm max-h-24 py-2.5 px-3 resize-none placeholder-gray-400" placeholder="Type a message..."></textarea>
+                        <button onclick="sendMessage()" class="p-2 bg-blue-600 text-white rounded-full w-9 h-9 flex items-center justify-center hover:bg-blue-700 shadow-md transition-all active:scale-90 flex-none"><i class="fas fa-arrow-up text-xs"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="payModal" class="fixed inset-0 z-[100] hidden" role="dialog">
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0" id="payBackdrop" onclick="closePayModal()"></div>
+            <div id="payPanel" class="absolute bottom-0 w-full bg-white rounded-t-[30px] shadow-2xl transform translate-y-full transition-transform duration-300 flex flex-col max-h-[90vh]">
+                
+                <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-[30px]">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">Payment Request</h3>
+                        <p class="text-xs text-gray-500" id="payModalId">#INV-0000</p>
+                    </div>
+                    <button onclick="closePayModal()" class="w-8 h-8 flex items-center justify-center bg-white rounded-full text-gray-400 shadow-sm"><i class="fas fa-times"></i></button>
+                </div>
+
+                <div class="p-6 overflow-y-auto custom-scroll space-y-6">
+                    <div class="bg-blue-50 p-6 rounded-2xl text-center border border-blue-100">
+                        <p class="text-xs font-bold text-blue-400 uppercase tracking-widest mb-1">Total Amount</p>
+                        <h2 class="text-4xl font-black text-slate-900" id="payModalAmount">$0.00</h2>
+                        <p class="text-sm text-slate-600 mt-2 font-medium" id="payModalTitle">Title</p>
+                    </div>
+                    
+                    <div id="payOptions" class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-xs font-bold text-gray-400 uppercase">Scan to Pay</h4>
+                            <span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded font-bold">UPI</span>
+                        </div>
+                        <div class="border-2 border-dashed border-gray-200 rounded-xl p-4 flex flex-col items-center justify-center bg-white">
+                            <img src="" alt="QR Code" class="w-32 h-32 mb-2 mix-blend-multiply opacity-80" id="payQR">
+                            <p class="text-xs text-gray-400 font-mono select-all bg-gray-100 px-2 py-1 rounded" id="payUPI">id@upi</p>
+                        </div>
+                    </div>
+
+                    <div id="payStatusMsg" class="hidden text-center p-4 bg-yellow-50 rounded-xl border border-yellow-100">
+                        <i class="fas fa-clock text-yellow-500 text-xl mb-2"></i>
+                        <h4 class="font-bold text-yellow-700 text-sm">Under Review</h4>
+                        <p class="text-xs text-yellow-600 mt-1">Verifying transaction...</p>
+                    </div>
+                </div>
+
+                <div class="p-4 border-t border-gray-100 grid grid-cols-2 gap-3 bg-white">
+                    <button onclick="openSupportChat()" class="py-3.5 rounded-xl bg-gray-100 text-gray-600 font-bold text-sm hover:bg-gray-200"><i class="fas fa-headset mr-2"></i> Help</button>
+                    <button id="btnMarkPaid" onclick="markAsPaid()" class="py-3.5 rounded-xl bg-slate-900 text-white font-bold text-sm shadow-lg active:scale-95">I Have Paid</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="toast" class="fixed top-5 right-5 bg-slate-800 text-white px-6 py-3 rounded-xl shadow-2xl transform translate-x-[150%] transition-transform duration-300 z-[150] flex items-center border border-slate-700">
+            <div class="w-2 h-2 rounded-full bg-green-400 mr-3 shadow-[0_0_8px_rgba(74,222,128,0.5)]"></div>
+            <div>
+                <h4 class="text-sm font-bold">Success</h4>
+                <p class="text-xs text-slate-400" id="toastMsg">Action completed.</p>
+            </div>
+        </div>
+
+        <nav class="flex-none bg-white/90 backdrop-blur-xl border-t border-ios-border h-[83px] w-full absolute bottom-0 z-30 pb-5">
+            <ul class="flex justify-around items-center h-full px-1">
+                <li class="flex-1 group"><button onclick="switchSection('home')" class="nav-btn w-full flex flex-col items-center justify-center text-gray-400"><i class="fas fa-house text-xl mb-0.5"></i><span class="text-[10px]">Home</span></button></li>
+                <li class="flex-1 group"><button onclick="switchSection('inbox')" class="nav-btn w-full flex flex-col items-center justify-center text-gray-400"><i class="fas fa-inbox text-xl mb-0.5"></i><span class="text-[10px]">Inbox</span></button></li>
+                <li class="flex-1 group"><button onclick="switchSection('files')" class="nav-btn w-full flex flex-col items-center justify-center text-gray-400"><i class="fas fa-folder text-xl mb-0.5"></i><span class="text-[10px]">Files</span></button></li>
+                <li class="flex-1 group"><button onclick="switchSection('payments')" class="nav-btn w-full flex flex-col items-center justify-center text-ios-blue"><i class="fas fa-inr text-xl mb-0.5"></i><span class="text-[10px]">Pay</span></button></li>
+                <li class="flex-1 group"><button onclick="switchSection('profile')" class="nav-btn w-full flex flex-col items-center justify-center text-gray-400"><i class="fas fa-user text-xl mb-0.5"></i><span class="text-[10px]">Profile</span></button></li>
+            </ul>
+        </nav>
+
+    </div>
+
+<script src="payments.js">
+</script>
+</body>
+</html>

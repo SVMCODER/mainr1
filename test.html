@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Dashboard</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { primary: '#3b82f6', secondary: '#6366f1', dark: '#0f172a' }
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Animations */
+        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        /* Custom Input Styles */
+        .custom-input { transition: all 0.2s; }
+        .custom-input:focus { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); border-color: #3b82f6; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-screen flex overflow-hidden font-sans">
+
+    <aside class="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 h-full z-20 shadow-sm">
+        <div class="p-6 border-b border-slate-100 flex items-center space-x-3">
+            <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30">A</div>
+            <div>
+                <h1 class="font-bold text-lg tracking-tight text-slate-900 leading-tight">Agent<span class="text-blue-600">Pro</span></h1>
+                <p class="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Dashboard</p>
+            </div>
+        </div>
+        
+        <nav class="flex-1 p-4 space-y-2">
+            <button onclick="showSection('orders')" id="nav-orders" class="nav-item w-full flex items-center space-x-3 px-4 py-3 bg-blue-50 text-blue-600 rounded-xl font-semibold transition-all">
+                <i class="fas fa-layer-group w-5"></i> <span>Orders</span>
+            </button>
+            <button onclick="showSection('files')" id="nav-files" class="nav-item w-full flex items-center space-x-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-800 rounded-xl font-medium transition-all">
+                <i class="fas fa-folder-open w-5"></i> <span>Files</span>
+            </button>
+            <button class="nav-item w-full flex items-center space-x-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-800 rounded-xl font-medium transition-all">
+                <i class="fas fa-chart-pie w-5"></i> <span>Analytics</span>
+            </button>
+        </nav>
+
+        <div class="p-4 border-t border-slate-100">
+            <div class="bg-slate-50 rounded-xl p-3 flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500"><i class="fas fa-user"></i></div>
+                <div class="flex-1 min-w-0">
+                    <div id="userInfo" class="text-xs font-bold text-slate-700 truncate">Loading...</div>
+                    <button onclick="auth.signOut()" class="text-[10px] text-red-500 hover:underline">Sign Out</button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full relative overflow-hidden">
+        
+        <div id="ordersSection" class="flex flex-col h-full">
+            <header class="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-10">
+                <h2 class="text-lg font-bold text-slate-800">Assigned Orders</h2>
+                <button onclick="openEditor()" class="bg-brand-primary hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-lg shadow-blue-500/30 transition-all flex items-center active:scale-95">
+                    <i class="fas fa-plus mr-2"></i> New Order
+                </button>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 custom-scroll">
+                <div id="loadingState" class="text-center py-20 text-slate-400 hidden">
+                    <i class="fas fa-circle-notch fa-spin text-3xl mb-3"></i>
+                    <p>Syncing your orders...</p>
+                </div>
+                <div id="ordersGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-24 md:pb-0">
+                    </div>
+                <div id="emptyOrders" class="hidden flex flex-col items-center justify-center py-20 text-slate-400">
+                    <i class="fas fa-box-open text-4xl mb-4 text-slate-300"></i>
+                    <p>No orders assigned to you yet.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="filesSection" class="hidden flex-col h-full">
+            <header class="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-10">
+                <h2 class="text-lg font-bold text-slate-800">Project Files</h2>
+                <button onclick="loadAgentFiles()" class="text-slate-400 hover:text-blue-600"><i class="fas fa-sync-alt"></i></button>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 custom-scroll">
+                <div id="filesLoader" class="text-center py-20 text-slate-400 hidden"><i class="fas fa-circle-notch fa-spin text-2xl"></i></div>
+                <div id="filesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    </div>
+                <div id="emptyFiles" class="hidden flex flex-col items-center justify-center py-20 text-slate-400">
+                    <i class="far fa-folder-open text-4xl mb-4 text-slate-300"></i>
+                    <p>No files uploaded for your orders.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="md:hidden h-20 bg-white border-t border-slate-200 flex justify-around items-center px-2 absolute bottom-0 w-full z-10 pb-2">
+            <button onclick="showSection('orders')" class="flex flex-col items-center p-2 text-blue-600"><i class="fas fa-layer-group text-xl mb-1"></i><span class="text-[10px] font-bold">Orders</span></button>
+            <button onclick="showSection('files')" class="flex flex-col items-center p-2 text-slate-400"><i class="fas fa-folder text-xl mb-1"></i><span class="text-[10px] font-bold">Files</span></button>
+            <button class="flex flex-col items-center p-2 text-slate-400"><i class="fas fa-user text-xl mb-1"></i><span class="text-[10px] font-bold">Profile</span></button>
+        </div>
+    </main>
+
+    <div id="editorModal" class="fixed inset-0 z-50 hidden" role="dialog">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity opacity-0" id="modalBackdrop" onclick="closeEditor()"></div>
+        
+        <div id="modalPanel" class="absolute bottom-0 md:top-0 md:bottom-auto md:my-auto md:inset-x-0 md:max-w-xl bg-white rounded-t-3xl md:rounded-2xl shadow-2xl transform translate-y-full md:translate-y-10 transition-transform duration-300 flex flex-col max-h-[95vh]">
+            
+            <div class="md:hidden w-full flex justify-center pt-3 pb-1"><div class="w-12 h-1.5 bg-slate-200 rounded-full"></div></div>
+
+            <div class="px-8 py-5 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-800" id="modalTitle">Create Order</h3>
+                <button onclick="closeEditor()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="p-8 overflow-y-auto custom-scroll space-y-6">
+                <input type="hidden" id="orderId"> 
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Project Title</label>
+                    <input type="text" id="inpTitle" class="custom-input w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-800 focus:outline-none" placeholder="e.g. Website Redesign">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Client Email</label>
+                    <input type="email" id="inpEmail" class="custom-input w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-800 focus:outline-none" placeholder="client@example.com">
+                </div>
+
+                <div class="grid grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Payment</label>
+                        <input type="number" id="inpPayment" class="custom-input w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-800 focus:outline-none" placeholder="0.00">
+                    </div>
+                    
+                    <div class="relative">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Deadline</label>
+                        <div onclick="toggleDatePicker()" class="custom-input w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-800 cursor-pointer flex justify-between items-center hover:bg-slate-100">
+                            <span id="dateDisplay" class="text-slate-500">Select Date</span>
+                            <i class="far fa-calendar text-slate-400"></i>
+                        </div>
+                        <input type="hidden" id="inpDeadline">
+                        
+                        <div id="customCalendar" class="absolute top-full mt-2 right-0 w-64 bg-white shadow-xl rounded-2xl border border-slate-100 p-4 hidden z-50">
+                            <div class="flex justify-between items-center mb-4">
+                                <button onclick="changeMonth(-1)" class="p-1 hover:bg-slate-100 rounded text-slate-500"><i class="fas fa-chevron-left"></i></button>
+                                <span id="calMonthYear" class="text-sm font-bold text-slate-700"></span>
+                                <button onclick="changeMonth(1)" class="p-1 hover:bg-slate-100 rounded text-slate-500"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                            <div class="grid grid-cols-7 gap-1 text-center mb-2">
+                                <span class="text-[10px] text-slate-400 font-bold">S</span><span class="text-[10px] text-slate-400 font-bold">M</span><span class="text-[10px] text-slate-400 font-bold">T</span><span class="text-[10px] text-slate-400 font-bold">W</span><span class="text-[10px] text-slate-400 font-bold">T</span><span class="text-[10px] text-slate-400 font-bold">F</span><span class="text-[10px] text-slate-400 font-bold">S</span>
+                            </div>
+                            <div id="calDays" class="grid grid-cols-7 gap-1 text-center text-sm font-medium text-slate-600"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Status</label>
+                    <button onclick="toggleSelect('statusSelect')" id="statusSelect" class="custom-input w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm flex justify-between items-center focus:outline-none hover:bg-slate-100 group">
+                        <span class="selected-value text-slate-800 font-medium">Open</span>
+                        <i class="fas fa-chevron-down text-slate-400 text-xs transition-transform group-active:rotate-180"></i>
+                    </button>
+                    <div id="statusOptions" class="absolute w-full bg-white shadow-xl rounded-xl mt-2 border border-slate-100 overflow-hidden z-40 hidden">
+                        <div onclick="selectOption('statusSelect', 'Open')" class="px-4 py-3 hover:bg-blue-50 cursor-pointer border-l-4 border-blue-500 text-sm font-medium">Open</div>
+                        <div onclick="selectOption('statusSelect', 'In Progress')" class="px-4 py-3 hover:bg-orange-50 cursor-pointer border-l-4 border-orange-500 text-sm font-medium">In Progress</div>
+                        <div onclick="selectOption('statusSelect', 'Finished')" class="px-4 py-3 hover:bg-green-50 cursor-pointer border-l-4 border-green-500 text-sm font-medium">Finished</div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-4">Progress Stage</label>
+                    <div class="relative px-2">
+                        <input type="range" id="inpProgress" min="1" max="4" step="1" value="1" oninput="updateProgressLabel(this.value)" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                        <div class="flex justify-between text-[10px] text-slate-400 mt-3 font-bold uppercase tracking-wider">
+                            <span>Start</span><span>Review</span><span>Process</span><span>Done</span>
+                        </div>
+                        <div id="progressLabel" class="absolute -top-7 right-0 text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">Stage 1/4</div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Details</label>
+                    <textarea id="inpDesc" rows="3" class="custom-input w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-800 focus:outline-none resize-none"></textarea>
+                </div>
+            </div>
+
+            <div class="p-6 border-t border-slate-100 flex space-x-3 bg-white">
+                <button onclick="closeEditor()" class="flex-1 py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition">Cancel</button>
+                <button onclick="saveOrder()" class="flex-1 py-3.5 bg-brand-primary text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 hover:bg-blue-600 transition flex justify-center items-center">
+                    <span id="btnSaveText">Save Order</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="chatModal" class="fixed inset-0 z-[60] hidden" role="dialog">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity opacity-0" id="chatBackdrop" onclick="closeChat()"></div>
+        
+        <div id="chatPanel" class="absolute bottom-0 md:top-0 md:bottom-auto md:my-auto md:inset-x-0 md:max-w-xl bg-white rounded-t-3xl md:rounded-2xl shadow-2xl transform translate-y-full md:translate-y-10 transition-transform duration-300 flex flex-col h-[85vh]">
+            
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-3xl md:rounded-t-2xl">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-primary to-indigo-500 text-white flex items-center justify-center font-bold shadow-md">C</div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800" id="chatClientName">Client Name</h3>
+                        <p class="text-xs text-slate-500 truncate max-w-[150px]" id="chatOrderTitle">Order Title</p>
+                    </div>
+                </div>
+                <button onclick="closeChat()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 text-slate-400 transition"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-white custom-scroll">
+                <div class="text-center text-slate-300 text-sm mt-10">Loading conversation...</div>
+            </div>
+
+            <div class="p-4 border-t border-slate-100 bg-white rounded-b-2xl">
+                <div class="flex items-end gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-200 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                    <textarea id="chatInput" rows="1" class="flex-1 bg-transparent border-0 focus:ring-0 text-sm max-h-24 py-2 resize-none text-slate-800 placeholder-slate-400" placeholder="Type a message..."></textarea>
+                    <button onclick="sendAgentMessage()" class="p-2 bg-brand-primary text-white rounded-xl shadow-md hover:bg-blue-600 transition-all active:scale-95 flex-none">
+                        <i class="fas fa-paper-plane text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed top-5 right-5 bg-slate-800 text-white px-6 py-3 rounded-xl shadow-2xl transform translate-x-[150%] transition-transform duration-300 z-[70] flex items-center border border-slate-700">
+        <div class="w-2 h-2 rounded-full bg-green-400 mr-3 shadow-[0_0_8px_rgba(74,222,128,0.5)]"></div>
+        <div>
+            <h4 class="text-sm font-bold">Success</h4>
+            <p class="text-xs text-slate-400" id="toastMsg">Action completed.</p>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIG ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBDeDc6pWhghXmGYg9QYQ3nVAGTpo1u5AM",
+            authDomain: "research-craft.firebaseapp.com",
+            projectId: "research-craft",
+            storageBucket: "research-craft.firebasestorage.app",
+            messagingSenderId: "284823836570",
+            appId: "1:284823836570:web:fb0d93cdf92368525d8c23",
+            measurementId: "G-6H5BS98612"
+        };
+        if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        const BREVO_KEY = "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"; 
+
+        // --- STATE ---
+        let currentAgent = null;
+        let selectedDate = new Date();
+        let isEditMode = false;
+        let activeChatId = null;
+        let chatUnsubscribe = null;
+
+        // --- AUTH ---
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentAgent = user;
+                document.getElementById('userInfo').innerText = user.email;
+                loadOrders();
+            } else {
+                auth.signInAnonymously().catch(console.error);
+            }
+        });
+
+        // --- NAVIGATION ---
+        function showSection(id) {
+            document.getElementById('ordersSection').classList.add('hidden');
+            document.getElementById('filesSection').classList.add('hidden');
+            document.getElementById('nav-orders').classList.replace('text-blue-600', 'text-slate-500');
+            document.getElementById('nav-orders').classList.remove('bg-blue-50');
+            document.getElementById('nav-files').classList.replace('text-blue-600', 'text-slate-500');
+            document.getElementById('nav-files').classList.remove('bg-blue-50');
+
+            if (id === 'orders') {
+                document.getElementById('ordersSection').classList.remove('hidden');
+                document.getElementById('nav-orders').classList.replace('text-slate-500', 'text-blue-600');
+                document.getElementById('nav-orders').classList.add('bg-blue-50');
+            } else if (id === 'files') {
+                document.getElementById('filesSection').classList.remove('hidden');
+                document.getElementById('filesSection').classList.add('flex');
+                document.getElementById('nav-files').classList.replace('text-slate-500', 'text-blue-600');
+                document.getElementById('nav-files').classList.add('bg-blue-50');
+                loadAgentFiles();
+            }
+        }
+
+        // --- ORDERS LOGIC ---
+        function loadOrders() {
+            document.getElementById('loadingState').classList.remove('hidden');
+            // STRICT FILTERING: Only show orders assigned to this agent
+            db.collection('orders')
+              .where('agentId', '==', currentAgent.uid)
+              .onSnapshot(snap => {
+                  document.getElementById('loadingState').classList.add('hidden');
+                  const grid = document.getElementById('ordersGrid');
+                  grid.innerHTML = '';
+                  if(snap.empty) return document.getElementById('emptyOrders').classList.remove('hidden');
+                  document.getElementById('emptyOrders').classList.add('hidden');
+
+                  let orders = [];
+                  snap.forEach(doc => orders.push({id: doc.id, ...doc.data()}));
+                  
+                  // Sort: Overdue -> Newest
+                  const now = new Date();
+                  orders.sort((a, b) => {
+                      const da = new Date(a.deadline), db = new Date(b.deadline);
+                      const ao = da < now && a.status !== "Finished";
+                      const bo = db < now && b.status !== "Finished";
+                      if (ao && !bo) return -1;
+                      if (!ao && bo) return 1;
+                      return b.createdAt - a.createdAt;
+                  });
+
+                  orders.forEach(order => {
+                      checkOverdue(order);
+                      grid.innerHTML += renderOrderCard(order);
+                  });
+              });
+        }
+
+        function renderOrderCard(d) {
+            const isOverdue = new Date(d.deadline) < new Date() && d.status !== 'Finished';
+            const statusMap = { 'Open': 'bg-blue-100 text-blue-700', 'In Progress': 'bg-orange-100 text-orange-700', 'Finished': 'bg-green-100 text-green-700' };
+            const badge = statusMap[d.status] || 'bg-slate-100';
+            
+            return `
+            <div class="bg-white rounded-2xl shadow-sm border ${isOverdue ? 'border-red-300 ring-1 ring-red-100' : 'border-slate-100'} hover:shadow-md transition-all group animate-slide-up">
+                <div class="p-5 border-b border-slate-50 flex justify-between items-start">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            ${isOverdue ? '<i class="fas fa-clock text-red-500 animate-pulse"></i>' : ''}
+                            <h3 class="font-bold text-slate-800 text-lg">${d.title}</h3>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1 font-mono">${d.clientEmail}</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${badge}">${d.status}</span>
+                </div>
+                <div class="p-5 space-y-4">
+                    <div>
+                        <div class="flex justify-between text-xs font-bold text-slate-400 mb-1">
+                            <span>Progress</span><span class="text-blue-600">Step ${d.currentStep}/4</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2"><div class="bg-blue-500 h-2 rounded-full transition-all" style="width:${(d.currentStep/4)*100}%"></div></div>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <div class="bg-slate-50 px-3 py-2 rounded-lg"><span class="block text-[10px] text-slate-400 font-bold uppercase">Deadline</span><span class="font-semibold ${isOverdue?'text-red-500':'text-slate-700'}">${new Date(d.deadline).toLocaleDateString()}</span></div>
+                        <div class="bg-slate-50 px-3 py-2 rounded-lg text-right"><span class="block text-[10px] text-slate-400 font-bold uppercase">Pay</span><span class="font-semibold text-slate-700">${d.payment}</span></div>
+                    </div>
+                </div>
+                <div class="p-4 border-t border-slate-50 grid grid-cols-2 gap-3">
+                    <button onclick="openChat('${d.id}', '${d.clientEmail}', '${d.title}')" class="py-2.5 bg-blue-50 text-blue-600 hover:bg-blue-100 font-semibold rounded-xl text-sm transition-colors flex justify-center items-center"><i class="fas fa-comment-alt mr-2"></i> Chat</button>
+                    <button onclick="openEditor('${d.id}')" class="py-2.5 bg-slate-50 text-slate-600 hover:bg-slate-100 font-semibold rounded-xl text-sm transition-colors flex justify-center items-center"><i class="fas fa-cog mr-2"></i> Manage</button>
+                </div>
+            </div>`;
+        }
+
+        // --- FILES LOGIC ---
+        function loadAgentFiles() {
+            const grid = document.getElementById('filesGrid');
+            const loader = document.getElementById('filesLoader');
+            const empty = document.getElementById('emptyFiles');
+            
+            loader.classList.remove('hidden');
+            grid.innerHTML = '';
+            empty.classList.add('hidden');
+
+            // STRICT FILTERING: Only files for this agent
+            db.collection('files')
+              .where('agentId', '==', currentAgent.uid)
+              .onSnapshot(snap => {
+                  loader.classList.add('hidden');
+                  grid.innerHTML = '';
+                  if(snap.empty) return empty.classList.remove('hidden');
+
+                  let files = [];
+                  snap.forEach(d => files.push({id: d.id, ...d.data()}));
+                  // Client-side sort to avoid index requirements for now
+                  files.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+                  files.forEach(f => {
+                      const ext = f.filename.split('.').pop().toLowerCase();
+                      let icon = 'fa-file-alt text-slate-400', bg = 'bg-slate-100';
+                      if(['pdf'].includes(ext)) { icon='fa-file-pdf text-red-500'; bg='bg-red-50'; }
+                      else if(['jpg','png'].includes(ext)) { icon='fa-image text-purple-500'; bg='bg-purple-50'; }
+                      
+                      grid.innerHTML += `
+                      <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all group animate-slide-up">
+                          <div class="flex justify-between items-start mb-3">
+                              <div class="w-10 h-10 ${bg} rounded-lg flex items-center justify-center text-xl"><i class="fas ${icon}"></i></div>
+                              <span class="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded uppercase">${ext}</span>
+                          </div>
+                          <h4 class="font-bold text-slate-800 text-sm truncate" title="${f.filename}">${f.filename}</h4>
+                          <p class="text-xs text-blue-500 mt-1 mb-3 truncate font-medium">${f.orderTitle || 'Unknown Order'}</p>
+                          <a onclick="forceDownload('${f.url}','${f.filename}.${ext}')" target="_blank" class="block w-full py-2 bg-slate-900 text-white text-center rounded-lg text-xs font-bold hover:bg-slate-800 transition" download>Download</a>
+                      </div>`;
+                  });
+              });
+        }
+
+        // --- MODAL & FORM LOGIC ---
+        async function forceDownload(url, filename) {
+  const res = await fetch(url);
+  const blob = await res.blob();
+
+  const blobUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+
+  a.remove();
+  window.URL.revokeObjectURL(blobUrl);
+}
+        function openEditor(orderId = null) {
+            const modal = document.getElementById('editorModal');
+            const panel = document.getElementById('modalPanel');
+            const backdrop = document.getElementById('modalBackdrop');
+            isEditMode = !!orderId;
+            document.getElementById('modalTitle').innerText = isEditMode ? 'Edit Order' : 'Create Order';
+            document.getElementById('btnSaveText').innerText = isEditMode ? 'Update' : 'Create';
+            document.getElementById('orderId').value = orderId || '';
+
+            if(isEditMode) {
+                db.collection('orders').doc(orderId).get().then(doc => {
+                    const d = doc.data();
+                    document.getElementById('inpTitle').value = d.title;
+                    document.getElementById('inpEmail').value = d.clientEmail;
+                    document.getElementById('inpPayment').value = d.payment;
+                    document.getElementById('inpDesc').value = d.description;
+                    document.getElementById('inpProgress').value = d.currentStep;
+                    updateProgressLabel(d.currentStep);
+                    document.querySelector('#statusSelect span').innerText = d.status;
+                    selectedDate = new Date(d.deadline);
+                    document.getElementById('dateDisplay').innerText = selectedDate.toDateString();
+                });
+            } else {
+                ['inpTitle','inpEmail','inpPayment','inpDesc'].forEach(id => document.getElementById(id).value = '');
+                document.getElementById('inpProgress').value = 1;
+                updateProgressLabel(1);
+                document.querySelector('#statusSelect span').innerText = 'Open';
+                selectedDate = new Date();
+                document.getElementById('dateDisplay').innerText = 'Select Date';
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0');
+                panel.classList.remove('translate-y-full', 'md:translate-y-10');
+            }, 10);
+        }
+
+        function closeEditor() {
+            const modal = document.getElementById('editorModal');
+            const panel = document.getElementById('modalPanel');
+            const backdrop = document.getElementById('modalBackdrop');
+            backdrop.classList.add('opacity-0');
+            panel.classList.add('translate-y-full', 'md:translate-y-10');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        async function saveOrder() {
+            if (!currentAgent) return;
+            const btn = document.querySelector('#modalPanel button:last-child');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            
+            const data = {
+                title: document.getElementById('inpTitle').value,
+                clientEmail: document.getElementById('inpEmail').value,
+                payment: document.getElementById('inpPayment').value,
+                deadline: selectedDate.toISOString().split('T')[0],
+                status: document.querySelector('#statusSelect span').innerText,
+                currentStep: parseInt(document.getElementById('inpProgress').value),
+                description: document.getElementById('inpDesc').value,
+                agentId: currentAgent.uid,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                if (isEditMode) {
+                    await db.collection('orders').doc(document.getElementById('orderId').value).update(data);
+                    // Email Logic here
+                    showToast('Order updated successfully');
+                } else {
+                    data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    data.orderId = Math.floor(1000 + Math.random() * 9000);
+                    data.overdueEmailSent = false;
+                    await db.collection('orders').add(data);
+                    // Email Logic here
+                    showToast('Order created successfully');
+                }
+                closeEditor();
+            } catch (e) {
+                console.error(e);
+                alert('Error');
+            }
+            btn.innerHTML = '<span id="btnSaveText">Save Order</span>';
+        }
+
+              // --- CHAT LOGIC (Fixed: No Flickering) ---
+        function openChat(orderId, email, title) {
+            activeChatId = orderId;
+            
+            // UI Updates
+            document.getElementById('chatClientName').innerText = email;
+            document.getElementById('chatOrderTitle').innerText = title;
+            
+            const modal = document.getElementById('chatModal');
+            const panel = document.getElementById('chatPanel');
+            const backdrop = document.getElementById('chatBackdrop');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0');
+                panel.classList.remove('translate-y-full', 'md:translate-y-10');
+            }, 10);
+
+            const container = document.getElementById('chatMessages');
+            container.innerHTML = ''; // Clear existing chat just once when opening
+
+            // Show initial loader inside the container if needed, 
+            // but usually cleaner to just start empty or with a small spinner
+            const loaderHTML = '<div id="initialLoader" class="text-center pt-10 text-slate-300"><i class="fas fa-circle-notch fa-spin"></i></div>';
+            container.innerHTML = loaderHTML;
+            
+            if(chatUnsubscribe) chatUnsubscribe();
+
+            // LISTEN FOR MESSAGES (Agent Side)
+            chatUnsubscribe = db.collection('orders').doc(orderId).collection('messages')
+                .orderBy('createdAt', 'asc')
+                .onSnapshot(snapshot => {
+                    
+                    // Remove initial loader if it exists
+                    const loader = document.getElementById('initialLoader');
+                    if (loader) loader.remove();
+
+                    // Handle Empty State
+                    if (snapshot.empty && container.innerHTML.trim() === '') {
+                        container.innerHTML = '<div class="text-center mt-10 text-xs text-slate-400">Start the conversation...</div>';
+                        return;
+                    } 
+                    // Remove "Start conversation" text if a message comes in
+                    else if (!snapshot.empty && container.innerHTML.includes('Start the conversation')) {
+                        container.innerHTML = '';
+                    }
+
+                    // Process ONLY new changes (Added messages)
+                    snapshot.docChanges().forEach(change => {
+                        if (change.type === "added") {
+                            const m = change.doc.data();
+                            
+                            // AGENT SIDE LOGIC: 
+                            // If sender is 'agent', it is ME (Right/Blue). 
+                            // If sender is 'client', it is THEM (Left/Gray).
+                            const isMe = m.senderRole === 'agent';
+                            
+                            const timeStr = m.createdAt 
+                                ? new Date(m.createdAt.seconds*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) 
+                                : '...';
+
+                            const msgHTML = `
+                            <div class="flex ${isMe ? 'justify-end' : 'justify-start'} animate-slide-up mb-3">
+                                <div class="max-w-[75%]">
+                                    <div class="px-4 py-2 text-sm rounded-2xl ${isMe ? 'bg-blue-600 text-white rounded-br-none' : 'bg-slate-100 text-slate-700 rounded-bl-none'}">
+                                        ${m.text}
+                                    </div>
+                                    <p class="text-[10px] text-slate-300 mt-1 ${isMe ? 'text-right' : ''}">${timeStr}</p>
+                                </div>
+                            </div>`;
+
+                            // Append to bottom
+                            container.insertAdjacentHTML('beforeend', msgHTML);
+                        }
+                    });
+
+                    // Scroll to bottom
+                    container.scrollTop = container.scrollHeight;
+                });
+        }
+
+
+        function closeChat() {
+            const modal = document.getElementById('chatModal');
+            const panel = document.getElementById('chatPanel');
+            const backdrop = document.getElementById('chatBackdrop');
+            backdrop.classList.add('opacity-0');
+            panel.classList.add('translate-y-full', 'md:translate-y-10');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+            if(chatUnsubscribe) chatUnsubscribe();
+        }
+
+        async function sendAgentMessage() {
+            const inp = document.getElementById('chatInput');
+            const text = inp.value.trim();
+            if(!text || !activeChatId) return;
+            inp.value = '';
+            inp.focus()
+            await db.collection('orders').doc(activeChatId).collection('messages').add({
+                text, senderId: currentAgent.uid, senderRole: 'agent', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+
+        // --- UTILS ---
+        function checkOverdue(order) {
+            if(new Date(order.deadline) < new Date() && order.status !== 'Finished' && !order.overdueEmailSent) {
+                // Trigger email logic here
+                db.collection('orders').doc(order.id).update({ overdueEmailSent: true });
+            }
+        }
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            t.classList.remove('translate-x-[150%]');
+            setTimeout(() => t.classList.add('translate-x-[150%]'), 3000);
+        }
+        function toggleSelect(id) { document.getElementById('statusOptions').classList.toggle('hidden'); document.getElementById(id).querySelector('.fas').classList.toggle('rotate-180'); }
+        function selectOption(id, val) { document.getElementById(id).querySelector('span').innerText = val; toggleSelect(id); }
+        function updateProgressLabel(v) { document.getElementById('progressLabel').innerText = `Stage ${v}/4`; }
+        
+        // Date Picker UI Logic
+        function toggleDatePicker() { document.getElementById('customCalendar').classList.toggle('hidden'); renderCalendar(); }
+        let currentCalMonth = new Date().getMonth();
+        let currentCalYear = new Date().getFullYear();
+        function renderCalendar() {
+            const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+            document.getElementById('calMonthYear').innerText = `${monthNames[currentCalMonth]} ${currentCalYear}`;
+            const firstDay = new Date(currentCalYear, currentCalMonth, 1).getDay();
+            const daysInMonth = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
+            const daysContainer = document.getElementById('calDays');
+            daysContainer.innerHTML = '';
+            for(let i=0; i<firstDay; i++) daysContainer.innerHTML += `<div></div>`;
+            for(let i=1; i<=daysInMonth; i++) {
+                const dayEl = document.createElement('div');
+                const isSelected = selectedDate.getDate() === i && selectedDate.getMonth() === currentCalMonth;
+                dayEl.className = `p-1.5 rounded-lg cursor-pointer text-xs transition-colors ${isSelected ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' : 'hover:bg-slate-100 text-slate-600'}`;
+                dayEl.innerText = i;
+                dayEl.onclick = () => {
+                    selectedDate = new Date(currentCalYear, currentCalMonth, i);
+                    document.getElementById('dateDisplay').innerText = selectedDate.toDateString();
+                    document.getElementById('customCalendar').classList.add('hidden');
+                };
+                daysContainer.appendChild(dayEl);
+            }
+        }
+        function changeMonth(d) {
+            currentCalMonth += d;
+            if(currentCalMonth > 11) { currentCalMonth = 0; currentCalYear++; }
+            if(currentCalMonth < 0) { currentCalMonth = 11; currentCalYear--; }
+            renderCalendar();
+        }
+    </script>
+</body>
+</html>

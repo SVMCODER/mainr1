@@ -1,0 +1,1954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Craft | Enterprise Dashboard</title>
+    
+    <!-- Tailwind CSS via CDN (for development only) -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    
+    <!-- SweetAlert2 for Beautiful Alerts -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Select2 for Beautiful Selects -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
+    <!-- QR Code Generator -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    
+    <!-- jsPDF for Invoices -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --secondary: #1e40af;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1f2937;
+            --light: #f9fafb;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        /* Custom animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideInRight {
+            from { transform: translateX(20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        .slide-in { animation: slideInRight 0.3s ease-out; }
+        .pulse { animation: pulse 2s infinite; }
+        
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* Glass effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Status badges */
+        .status-badge {
+            @apply px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide;
+        }
+        
+        .status-open { @apply bg-blue-100 text-blue-800; }
+        .status-progress { @apply bg-yellow-100 text-yellow-800; }
+        .status-review { @apply bg-purple-100 text-purple-800; }
+        .status-completed { @apply bg-green-100 text-green-800; }
+        .status-closed { @apply bg-gray-100 text-gray-800; }
+        .status-paid { @apply bg-green-100 text-green-800; }
+        .status-pending { @apply bg-red-100 text-red-800; }
+        .status-verified { @apply bg-indigo-100 text-indigo-800; }
+        
+        /* Custom card */
+        .custom-card {
+            @apply bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300;
+        }
+        
+        /* Custom button */
+        .btn {
+            @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+        }
+        
+        .btn-primary {
+            @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
+        }
+        
+        .btn-success {
+            @apply bg-green-600 text-white hover:bg-green-700 focus:ring-green-500;
+        }
+        
+        .btn-danger {
+            @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+        }
+        
+        .btn-secondary {
+            @apply bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-400;
+        }
+        
+        /* Chat bubbles */
+        .chat-bubble {
+            @apply max-w-[70%] rounded-2xl p-4 text-sm shadow-sm;
+        }
+        
+        .chat-bubble.sent {
+            @apply bg-blue-600 text-white rounded-br-none ml-auto;
+        }
+        
+        .chat-bubble.received {
+            @apply bg-gray-100 text-gray-800 rounded-bl-none;
+        }
+        
+        /* Loader */
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Custom select2 */
+        .select2-container--default .select2-selection--single {
+            @apply h-10 border border-gray-300 rounded-lg;
+        }
+        
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            @apply leading-10 text-gray-800;
+        }
+        
+        /* Toast notifications */
+        .toast {
+            @apply fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg flex items-center space-x-3;
+        }
+        
+        .toast-success {
+            @apply bg-green-500 text-white;
+        }
+        
+        .toast-error {
+            @apply bg-red-500 text-white;
+        }
+        
+        .toast-info {
+            @apply bg-blue-500 text-white;
+        }
+        
+        .toast-warning {
+            @apply bg-yellow-500 text-white;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="fixed inset-0 bg-gradient-to-br from-blue-600 to-indigo-700 z-50 flex flex-col items-center justify-center">
+        <div class="relative">
+            <div class="w-20 h-20 border-4 border-white border-opacity-20 border-t-white rounded-full animate-spin"></div>
+            <div class="absolute inset-0 flex items-center justify-center">
+                <i class="fas fa-flask text-white text-2xl"></i>
+            </div>
+        </div>
+        <p class="mt-6 text-white font-medium text-lg">Research Craft Enterprise</p>
+        <p class="text-white text-opacity-80 mt-2">Loading your dashboard...</p>
+    </div>
+
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="fixed inset-0 flex items-center justify-center p-4 hidden">
+        <div class="glass rounded-2xl shadow-2xl p-8 w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-flask text-white text-2xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">Research Craft</h1>
+                <p class="text-gray-600">Enterprise Research Portal</p>
+            </div>
+            
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input type="email" id="email" required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <input type="password" id="password" required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors">
+                </div>
+                
+                <button type="submit" class="w-full btn btn-primary py-3 rounded-lg font-semibold">
+                    Sign In
+                </button>
+            </form>
+            
+            <div id="auth-error" class="mt-4 text-red-600 text-sm text-center hidden"></div>
+            
+            <p class="mt-6 text-center text-sm text-gray-500">
+                Contact administrator if you need access
+            </p>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="hidden">
+        <!-- Top Navigation -->
+        <nav class="bg-white shadow-sm border-b border-gray-200 px-6 py-4 flex justify-between items-center sticky top-0 z-40">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-flask text-white"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-bold text-gray-800">Research Craft</span>
+                        <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full ml-2">Enterprise</span>
+                    </div>
+                </div>
+                
+                <div class="hidden md:flex items-center space-x-2">
+                    <span class="text-xs text-gray-500">Role:</span>
+                    <span id="current-role-badge" class="status-badge bg-blue-100 text-blue-800"></span>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <!-- Notifications -->
+                <div class="relative">
+                    <button id="notifications-btn" class="relative p-2 rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-bell text-gray-600 text-lg"></i>
+                        <span id="notification-count" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center hidden">0</span>
+                    </button>
+                </div>
+                
+                <!-- User Menu -->
+                <div class="flex items-center space-x-3">
+                    <div class="text-right hidden md:block">
+                        <p id="user-name" class="text-sm font-semibold text-gray-800">Loading...</p>
+                        <p id="user-role" class="text-xs text-gray-500"></p>
+                    </div>
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center font-bold text-white">
+                        U
+                    </div>
+                    <button id="logout-btn" class="btn btn-danger text-sm">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="flex">
+            <!-- Sidebar -->
+            <aside class="hidden md:flex w-64 bg-gradient-to-b from-gray-900 to-gray-800 text-white flex-col h-[calc(100vh-76px)] sticky top-[76px]">
+                <div class="p-6 border-b border-gray-700">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div id="sidebar-avatar" class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center font-bold text-white">
+                            U
+                        </div>
+                        <div>
+                            <h3 id="sidebar-user-name" class="font-semibold">Loading...</h3>
+                            <p id="sidebar-user-email" class="text-xs text-gray-400 truncate">user@example.com</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span id="sidebar-user-role" class="status-badge bg-blue-600 text-white"></span>
+                        <span id="sidebar-user-org" class="text-xs text-gray-400">ORG-0000</span>
+                    </div>
+                </div>
+                
+                <nav class="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar" id="sidebar-nav">
+                    <!-- Dynamic navigation -->
+                </nav>
+                
+                <div class="p-4 border-t border-gray-700">
+                    <div class="text-xs text-gray-400 mb-3 font-medium">QUICK STATS</div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="bg-gray-800 rounded-lg p-3">
+                            <div class="text-xs text-gray-400">Orders</div>
+                            <div id="stats-orders" class="font-bold text-lg">0</div>
+                        </div>
+                        <div class="bg-gray-800 rounded-lg p-3">
+                            <div class="text-xs text-gray-400">Tickets</div>
+                            <div id="stats-tickets" class="font-bold text-lg">0</div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+            
+            <!-- Mobile Bottom Navigation -->
+            <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-2 flex justify-around z-40">
+                <button data-view="dashboard" class="mobile-nav-btn flex flex-col items-center p-2 text-gray-600">
+                    <i class="fas fa-chart-bar text-lg"></i>
+                    <span class="text-xs mt-1">Dashboard</span>
+                </button>
+                <button data-view="orders" class="mobile-nav-btn flex flex-col items-center p-2 text-gray-600">
+                    <i class="fas fa-tasks text-lg"></i>
+                    <span class="text-xs mt-1">Orders</span>
+                </button>
+                <button data-view="inbox" class="mobile-nav-btn flex flex-col items-center p-2 text-gray-600">
+                    <i class="fas fa-inbox text-lg"></i>
+                    <span class="text-xs mt-1">Inbox</span>
+                </button>
+                <button data-view="support" class="mobile-nav-btn flex flex-col items-center p-2 text-gray-600">
+                    <i class="fas fa-headset text-lg"></i>
+                    <span class="text-xs mt-1">Support</span>
+                </button>
+            </nav>
+            
+            <!-- Main Content -->
+            <main class="flex-1 p-4 md:p-6 overflow-y-auto min-h-[calc(100vh-76px)] pb-20 md:pb-6 bg-gray-50">
+                <div id="content-area">
+                    <!-- Dynamic content -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Notifications Panel -->
+    <div id="notifications-panel" class="fixed right-4 top-20 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 hidden fade-in">
+        <div class="p-4 border-b border-gray-200">
+            <h3 class="font-bold text-gray-800 flex items-center">
+                <i class="fas fa-bell text-blue-600 mr-2"></i>
+                Notifications
+            </h3>
+        </div>
+        <div class="max-h-96 overflow-y-auto custom-scrollbar">
+            <div id="notifications-list" class="p-2">
+                <div class="p-4 text-center text-gray-500">
+                    <i class="fas fa-bell-slash text-2xl mb-2"></i>
+                    <p>No notifications</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- All Modals will be created dynamically -->
+    
+    <script>
+    // ============================================
+    // CONFIGURATION
+    // ============================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyBDeDc6pWhghXmGYg9QYQ3nVAGTpo1u5AM",
+        authDomain: "research-craft.firebaseapp.com",
+        projectId: "research-craft",
+        storageBucket: "research-craft.firebasestorage.app",
+        messagingSenderId: "284823836570",
+        appId: "1:284823836570:web:fb0d93cdf92368525d8c23",
+        measurementId: "G-6H5BS98612"
+    };
+
+    // ============================================
+    // APPLICATION STATE
+    // ============================================
+    let currentUser = null;
+    let currentView = 'dashboard';
+    let currentOrder = null;
+    let currentTicket = null;
+    let unsubscribeListeners = [];
+    let notifications = [];
+    let isUserActive = true;
+
+    // ============================================
+    // FIREBASE INITIALIZATION
+    // ============================================
+    let auth, db, storage;
+
+    try {
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        auth = firebase.auth();
+        db = firebase.firestore();
+        storage = firebase.storage();
+        console.log('Firebase initialized successfully');
+    } catch (error) {
+        console.error('Firebase initialization error:', error);
+        showToast('Failed to initialize Firebase', 'error');
+    }
+
+    // ============================================
+    // AUTHENTICATION
+    // ============================================
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            try {
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                if (userDoc.exists) {
+                    currentUser = {
+                        uid: user.uid,
+                        email: user.email,
+                        ...userDoc.data()
+                    };
+                    showDashboard();
+                    setupRealtimeListeners();
+                    updateUserUI();
+                    showToast(`Welcome back, ${currentUser.displayName || currentUser.email}!`, 'success');
+                } else {
+                    await auth.signOut();
+                    showAuthScreen();
+                    showToast('User data not found. Please contact administrator.', 'error');
+                }
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+                showToast('Error loading user data', 'error');
+                showAuthScreen();
+            }
+        } else {
+            showAuthScreen();
+        }
+    });
+
+    // Login handler
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const errorDiv = document.getElementById('auth-error');
+        
+        try {
+            await auth.signInWithEmailAndPassword(email, password);
+        } catch (error) {
+            errorDiv.textContent = error.message;
+            errorDiv.classList.remove('hidden');
+        }
+    });
+
+    // Logout handler
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+        try {
+            // Clear all listeners
+            unsubscribeListeners.forEach(unsub => unsub());
+            unsubscribeListeners = [];
+            
+            await auth.signOut();
+            showToast('Logged out successfully', 'success');
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    });
+
+    // ============================================
+    // UI MANAGEMENT
+    // ============================================
+    function showAuthScreen() {
+        document.getElementById('loading-screen').classList.add('hidden');
+        document.getElementById('auth-screen').classList.remove('hidden');
+        document.getElementById('dashboard').classList.add('hidden');
+    }
+
+    function showDashboard() {
+        document.getElementById('loading-screen').classList.add('hidden');
+        document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('dashboard').classList.remove('hidden');
+        loadView(currentView);
+    }
+
+    function updateUserUI() {
+        if (!currentUser) return;
+        
+        // Update all user info
+        const name = currentUser.displayName || currentUser.email.split('@')[0];
+        const email = currentUser.email;
+        const role = currentUser.role;
+        const org = currentUser.orgId || 'ORG-0000';
+        
+        document.getElementById('user-name').textContent = name;
+        document.getElementById('sidebar-user-name').textContent = name;
+        document.getElementById('sidebar-user-email').textContent = email;
+        document.getElementById('sidebar-user-org').textContent = org;
+        document.getElementById('sidebar-user-role').textContent = role;
+        document.getElementById('current-role-badge').textContent = role;
+        document.getElementById('user-role').textContent = role;
+        
+        // Update avatar
+        const avatarText = name.charAt(0).toUpperCase();
+        document.getElementById('sidebar-avatar').textContent = avatarText;
+        
+        // Update navigation based on role
+        updateSidebarNavigation();
+    }
+
+    function updateSidebarNavigation() {
+        const nav = document.getElementById('sidebar-nav');
+        nav.innerHTML = '';
+        
+        const baseItems = [
+            { id: 'dashboard', icon: 'fas fa-chart-bar', label: 'Dashboard' },
+            { id: 'orders', icon: 'fas fa-tasks', label: 'Orders' }
+        ];
+        
+        const roleItems = {
+            'Client': [
+                { id: 'payments', icon: 'fas fa-credit-card', label: 'Payments' },
+                { id: 'inbox', icon: 'fas fa-inbox', label: 'Inbox' },
+                { id: 'support', icon: 'fas fa-headset', label: 'Support' }
+            ],
+            'Sales Team': [
+                { id: 'leads', icon: 'fas fa-users', label: 'Leads' },
+                { id: 'inbox', icon: 'fas fa-inbox', label: 'Inbox' },
+                { id: 'payments', icon: 'fas fa-credit-card', label: 'Payments' }
+            ],
+            'Support Team': [
+                { id: 'support', icon: 'fas fa-headset', label: 'Support Tickets' }
+            ],
+            'Agent': [
+                { id: 'my-orders', icon: 'fas fa-tasks', label: 'My Orders' },
+                { id: 'inbox', icon: 'fas fa-inbox', label: 'Messages' }
+            ]
+        };
+        
+        const items = [...baseItems, ...(roleItems[currentUser.role] || [])];
+        
+        items.forEach(item => {
+            const button = document.createElement('button');
+            button.className = `w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 transition-colors ${currentView === item.id ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`;
+            button.innerHTML = `
+                <i class="${item.icon} w-5"></i>
+                <span>${item.label}</span>
+            `;
+            button.addEventListener('click', () => loadView(item.id));
+            nav.appendChild(button);
+        });
+    }
+
+    // ============================================
+    // VIEW MANAGEMENT
+    // ============================================
+    function loadView(viewName) {
+        currentView = viewName;
+        
+        // Update active navigation
+        document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+            btn.classList.toggle('text-blue-600', btn.dataset.view === viewName);
+        });
+        
+        updateSidebarNavigation();
+        
+        const contentArea = document.getElementById('content-area');
+        contentArea.innerHTML = `
+            <div class="flex justify-center items-center p-12">
+                <div class="loader"></div>
+            </div>
+        `;
+        
+        setTimeout(() => {
+            switch(viewName) {
+                case 'dashboard':
+                    loadDashboardView();
+                    break;
+                case 'orders':
+                    loadOrdersView();
+                    break;
+                case 'payments':
+                    loadPaymentsView();
+                    break;
+                case 'inbox':
+                    loadInboxView();
+                    break;
+                case 'support':
+                    loadSupportView();
+                    break;
+                case 'leads':
+                    loadLeadsView();
+                    break;
+                case 'my-orders':
+                    loadAgentOrdersView();
+                    break;
+            }
+        }, 300);
+    }
+
+    // Mobile navigation
+    document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => loadView(btn.dataset.view));
+    });
+
+    // ============================================
+    // DASHBOARD VIEW
+    // ============================================
+    async function loadDashboardView() {
+        const contentArea = document.getElementById('content-area');
+        
+        try {
+            let stats = {
+                orders: 0,
+                tickets: 0,
+                payments: 0,
+                revenue: 0
+            };
+            
+            // Fetch stats based on role
+            if (currentUser.role === 'Client') {
+                const ordersSnapshot = await db.collection('orders')
+                    .where('clientUid', '==', currentUser.uid)
+                    .get();
+                stats.orders = ordersSnapshot.size;
+                
+                const ticketsSnapshot = await db.collection('tickets')
+                    .where('clientUid', '==', currentUser.uid)
+                    .get();
+                stats.tickets = ticketsSnapshot.size;
+                
+                const paymentsSnapshot = await db.collection('payments')
+                    .where('clientUid', '==', currentUser.uid)
+                    .get();
+                stats.payments = paymentsSnapshot.size;
+                
+                // Calculate revenue
+                let totalRevenue = 0;
+                ordersSnapshot.forEach(doc => {
+                    const order = doc.data();
+                    if (order.price) totalRevenue += parseFloat(order.price);
+                });
+                stats.revenue = totalRevenue;
+            }
+            
+            // Update sidebar stats
+            document.getElementById('stats-orders').textContent = stats.orders;
+            document.getElementById('stats-tickets').textContent = stats.tickets;
+            
+            const html = `
+                <div class="mb-8">
+                    <h1 class="text-3xl font-bold text-gray-800">Dashboard</h1>
+                    <p class="text-gray-600 mt-2">Welcome back, ${currentUser.displayName || currentUser.email}</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="custom-card p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="p-3 bg-blue-100 rounded-lg">
+                                <i class="fas fa-tasks text-blue-600"></i>
+                            </div>
+                            <span class="text-sm text-blue-600 font-medium">Active</span>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-1">${stats.orders}</h3>
+                        <p class="text-gray-600">Orders</p>
+                    </div>
+                    
+                    <div class="custom-card p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="p-3 bg-purple-100 rounded-lg">
+                                <i class="fas fa-headset text-purple-600"></i>
+                            </div>
+                            <span class="text-sm text-purple-600 font-medium">Open</span>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-1">${stats.tickets}</h3>
+                        <p class="text-gray-600">Tickets</p>
+                    </div>
+                    
+                    <div class="custom-card p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="p-3 bg-green-100 rounded-lg">
+                                <i class="fas fa-credit-card text-green-600"></i>
+                            </div>
+                            <span class="text-sm text-green-600 font-medium">Pending</span>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-1">${stats.payments}</h3>
+                        <p class="text-gray-600">Payments</p>
+                    </div>
+                    
+                    <div class="custom-card p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="p-3 bg-yellow-100 rounded-lg">
+                                <i class="fas fa-dollar-sign text-yellow-600"></i>
+                            </div>
+                            <span class="text-sm text-yellow-600 font-medium">Total</span>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-1">$${stats.revenue}</h3>
+                        <p class="text-gray-600">Revenue</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="custom-card p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Quick Actions</h3>
+                        <div class="space-y-3">
+                            ${currentUser.role === 'Client' ? `
+                                <button onclick="openNewOrderModal()" class="w-full text-left p-4 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors">
+                                    <i class="fas fa-plus text-blue-600 mr-3"></i>
+                                    <span class="font-medium">Request New Order</span>
+                                </button>
+                                <button onclick="openTicketModal()" class="w-full text-left p-4 bg-purple-50 rounded-lg border border-purple-200 hover:bg-purple-100 transition-colors">
+                                    <i class="fas fa-headset text-purple-600 mr-3"></i>
+                                    <span class="font-medium">Create Support Ticket</span>
+                                </button>
+                            ` : ''}
+                            
+                            ${currentUser.role === 'Sales Team' ? `
+                                <button onclick="openLeadModal()" class="w-full text-left p-4 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 transition-colors">
+                                    <i class="fas fa-user-plus text-green-600 mr-3"></i>
+                                    <span class="font-medium">Add New Lead</span>
+                                </button>
+                            ` : ''}
+                            
+                            ${currentUser.role === 'Agent' ? `
+                                <button onclick="loadView('my-orders')" class="w-full text-left p-4 bg-yellow-50 rounded-lg border border-yellow-200 hover:bg-yellow-100 transition-colors">
+                                    <i class="fas fa-tasks text-yellow-600 mr-3"></i>
+                                    <span class="font-medium">View My Orders</span>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="custom-card p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Recent Activity</h3>
+                        <div id="recent-activity" class="space-y-4">
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-history text-3xl mb-3"></i>
+                                <p>No recent activity</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            contentArea.innerHTML = html;
+            
+        } catch (error) {
+            console.error('Error loading dashboard:', error);
+            showToast('Error loading dashboard', 'error');
+        }
+    }
+
+    // ============================================
+    // ORDERS VIEW (Client & Sales Team)
+    // ============================================
+    async function loadOrdersView() {
+        const contentArea = document.getElementById('content-area');
+        
+        try {
+            let orders = [];
+            let query = db.collection('orders');
+            
+            if (currentUser.role === 'Client') {
+                query = query.where('clientUid', '==', currentUser.uid);
+            } else if (currentUser.role === 'Sales Team') {
+                // Sales team can see orders they created
+                query = query.where('salesUid', '==', currentUser.uid);
+            }
+            
+            const snapshot = await query.orderBy('createdAt', 'desc').get();
+            
+            snapshot.forEach(doc => {
+                orders.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+            
+            const html = `
+                <div class="mb-8">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between">
+                        <div>
+                            <h1 class="text-3xl font-bold text-gray-800">Orders</h1>
+                            <p class="text-gray-600 mt-2">${currentUser.role === 'Client' ? 'Your research orders' : 'Manage client orders'}</p>
+                        </div>
+                        ${currentUser.role === 'Client' ? `
+                            <button onclick="openNewOrderModal()" class="mt-4 md:mt-0 btn btn-primary">
+                                <i class="fas fa-plus mr-2"></i>New Order Request
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                ${orders.length === 0 ? `
+                    <div class="custom-card p-12 text-center">
+                        <i class="fas fa-tasks text-4xl text-gray-300 mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-800 mb-2">No orders yet</h3>
+                        <p class="text-gray-600">${currentUser.role === 'Client' ? 'Start by requesting a new order' : 'No orders found'}</p>
+                    </div>
+                ` : `
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${orders.map(order => `
+                            <div class="custom-card hover:shadow-xl transition-all cursor-pointer" onclick="viewOrderDetails('${order.id}')">
+                                <div class="p-6">
+                                    <div class="flex justify-between items-start mb-4">
+                                        <div class="flex-1">
+                                            <h3 class="font-bold text-gray-800 mb-1 truncate">${order.title}</h3>
+                                            <p class="text-xs text-gray-500">${order.id.substring(0, 8)}</p>
+                                        </div>
+                                        <span class="status-badge ${getStatusClass(order.status)}">${order.status}</span>
+                                    </div>
+                                    
+                                    <p class="text-gray-600 text-sm mb-4 line-clamp-2">${order.description || 'No description'}</p>
+                                    
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-gray-500">Price:</span>
+                                            <span class="font-semibold">$${order.price || '0'}</span>
+                                        </div>
+                                        
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-gray-500">Agent:</span>
+                                            <span class="font-medium">${order.agentName || 'Not assigned'}</span>
+                                        </div>
+                                        
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-gray-500">Progress:</span>
+                                            <span class="font-medium">${order.progress || 0}%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `}
+            `;
+            
+            contentArea.innerHTML = html;
+            
+        } catch (error) {
+            console.error('Error loading orders:', error);
+            showToast('Error loading orders', 'error');
+        }
+    }
+
+    // ============================================
+    // LEAD MANAGEMENT (Sales Team)
+    // ============================================
+    async function loadLeadsView() {
+        const contentArea = document.getElementById('content-area');
+        
+        try {
+            const leadsSnapshot = await db.collection('leads')
+                .where('salesUid', '==', currentUser.uid)
+                .orderBy('createdAt', 'desc')
+                .get();
+            
+            const leads = [];
+            leadsSnapshot.forEach(doc => {
+                leads.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+            
+            const html = `
+                <div class="mb-8">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between">
+                        <div>
+                            <h1 class="text-3xl font-bold text-gray-800">Leads</h1>
+                            <p class="text-gray-600 mt-2">Manage your leads and convert them to clients</p>
+                        </div>
+                        <button onclick="openLeadModal()" class="mt-4 md:mt-0 btn btn-success">
+                            <i class="fas fa-user-plus mr-2"></i>Add Lead
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    ${leads.length === 0 ? `
+                        <div class="col-span-3 custom-card p-12 text-center">
+                            <i class="fas fa-users text-4xl text-gray-300 mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-800 mb-2">No leads yet</h3>
+                            <p class="text-gray-600">Add your first lead to get started</p>
+                        </div>
+                    ` : leads.map(lead => `
+                        <div class="custom-card">
+                            <div class="p-6">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h3 class="font-bold text-gray-800">${lead.clientName}</h3>
+                                        <p class="text-sm text-gray-600">${lead.email}</p>
+                                    </div>
+                                    <span class="text-xs ${lead.status === 'converted' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'} px-2 py-1 rounded-full">
+                                        ${lead.status}
+                                    </span>
+                                </div>
+                                
+                                <div class="space-y-3 mb-4">
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-gray-500">Source:</span>
+                                        <span class="font-medium">${lead.source || 'N/A'}</span>
+                                    </div>
+                                    
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-gray-500">Created:</span>
+                                        <span class="font-medium">${lead.createdAt ? new Date(lead.createdAt.toDate()).toLocaleDateString() : 'N/A'}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="space-y-2">
+                                    ${!lead.clientUid ? `
+                                        <button onclick="convertLeadToClient('${lead.id}', '${lead.clientName}', '${lead.email}')" 
+                                                class="w-full btn btn-success btn-sm">
+                                            <i class="fas fa-user-check mr-2"></i>Convert to Client
+                                        </button>
+                                    ` : ''}
+                                    
+                                    <button onclick="createOrderForLead('${lead.id}')" 
+                                            class="w-full btn btn-primary btn-sm">
+                                        <i class="fas fa-file-invoice-dollar mr-2"></i>Create Order
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            contentArea.innerHTML = html;
+            
+        } catch (error) {
+            console.error('Error loading leads:', error);
+            showToast('Error loading leads', 'error');
+        }
+    }
+
+    // ============================================
+    // PAYMENTS VIEW
+    // ============================================
+    async function loadPaymentsView() {
+        const contentArea = document.getElementById('content-area');
+        
+        try {
+            let payments = [];
+            let query = db.collection('payments');
+            
+            if (currentUser.role === 'Client') {
+                query = query.where('clientUid', '==', currentUser.uid);
+            } else if (currentUser.role === 'Sales Team') {
+                // Sales team can see payments for orders they created
+                const ordersSnapshot = await db.collection('orders')
+                    .where('salesUid', '==', currentUser.uid)
+                    .get();
+                
+                const orderIds = ordersSnapshot.docs.map(doc => doc.id);
+                
+                if (orderIds.length > 0) {
+                    // Note: Firebase doesn't support multiple 'in' queries efficiently
+                    // For production, you'd want to structure this differently
+                    const paymentsSnapshot = await db.collection('payments')
+                        .where('orderId', 'in', orderIds.slice(0, 10)) // Limit to 10 orders
+                        .get();
+                    
+                    paymentsSnapshot.forEach(doc => {
+                        payments.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                }
+            }
+            
+            const html = `
+                <div class="mb-8">
+                    <h1 class="text-3xl font-bold text-gray-800">Payments</h1>
+                    <p class="text-gray-600 mt-2">Manage your payments and invoices</p>
+                </div>
+                
+                ${payments.length === 0 ? `
+                    <div class="custom-card p-12 text-center">
+                        <i class="fas fa-credit-card text-4xl text-gray-300 mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-800 mb-2">No payments yet</h3>
+                        <p class="text-gray-600">No payment records found</p>
+                    </div>
+                ` : `
+                    <div class="custom-card overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200">
+                                    ${payments.map(payment => `
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-6 py-4">
+                                                <div>
+                                                    <p class="font-medium text-gray-800">${payment.title}</p>
+                                                    ${payment.description ? `<p class="text-sm text-gray-600">${payment.description}</p>` : ''}
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4">
+                                                <p class="text-sm text-gray-800">${payment.orderTitle || 'N/A'}</p>
+                                            </td>
+                                            <td class="px-6 py-4">
+                                                <p class="font-bold text-gray-800">$${payment.amount}</p>
+                                            </td>
+                                            <td class="px-6 py-4">
+                                                <span class="status-badge ${getStatusClass(payment.status)}">
+                                                    ${payment.status}
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4">
+                                                <div class="flex space-x-2">
+                                                    ${payment.status === 'pending' && currentUser.role === 'Client' ? `
+                                                        <button onclick="payPayment('${payment.id}')" class="btn btn-primary btn-sm">
+                                                            Pay
+                                                        </button>
+                                                    ` : ''}
+                                                    
+                                                    <button onclick="downloadInvoice('${payment.id}')" class="btn btn-secondary btn-sm">
+                                                        <i class="fas fa-download"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `}
+            `;
+            
+            contentArea.innerHTML = html;
+            
+        } catch (error) {
+            console.error('Error loading payments:', error);
+            showToast('Error loading payments', 'error');
+        }
+    }
+
+    // ============================================
+    // SUPPORT TICKETS VIEW
+    // ============================================
+    async function loadSupportView() {
+        const contentArea = document.getElementById('content-area');
+        
+        try {
+            let tickets = [];
+            let query = db.collection('tickets');
+            
+            if (currentUser.role === 'Client') {
+                query = query.where('clientUid', '==', currentUser.uid);
+            }
+            // Support team can see all tickets (no filter)
+            
+            const snapshot = await query.orderBy('createdAt', 'desc').get();
+            
+            snapshot.forEach(doc => {
+                tickets.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+            
+            const html = `
+                <div class="mb-8">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between">
+                        <div>
+                            <h1 class="text-3xl font-bold text-gray-800">Support Tickets</h1>
+                            <p class="text-gray-600 mt-2">${currentUser.role === 'Client' ? 'Get help with your orders' : 'Manage support requests'}</p>
+                        </div>
+                        <button onclick="openTicketModal()" class="mt-4 md:mt-0 btn btn-primary">
+                            <i class="fas fa-plus mr-2"></i>New Ticket
+                        </button>
+                    </div>
+                </div>
+                
+                ${tickets.length === 0 ? `
+                    <div class="custom-card p-12 text-center">
+                        <i class="fas fa-headset text-4xl text-gray-300 mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-800 mb-2">No tickets yet</h3>
+                        <p class="text-gray-600">Create your first support ticket</p>
+                    </div>
+                ` : `
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${tickets.map(ticket => `
+                            <div class="custom-card hover:shadow-xl transition-all cursor-pointer" onclick="viewTicketDetails('${ticket.id}')">
+                                <div class="p-6">
+                                    <div class="flex justify-between items-start mb-4">
+                                        <div class="flex-1">
+                                            <h3 class="font-bold text-gray-800 mb-1 truncate">${ticket.subject}</h3>
+                                            <p class="text-xs text-gray-500">${ticket.id.substring(0, 8)}</p>
+                                        </div>
+                                        <span class="status-badge ${getStatusClass(ticket.status)}">${ticket.status}</span>
+                                    </div>
+                                    
+                                    <p class="text-gray-600 text-sm mb-4 line-clamp-2">${ticket.description}</p>
+                                    
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-gray-500">Priority:</span>
+                                            <span class="font-medium ${ticket.priority === 'high' ? 'text-red-600' : ticket.priority === 'medium' ? 'text-yellow-600' : 'text-green-600'}">
+                                                ${ticket.priority}
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-gray-500">Created:</span>
+                                            <span class="font-medium">${ticket.createdAt ? new Date(ticket.createdAt.toDate()).toLocaleDateString() : 'N/A'}</span>
+                                        </div>
+                                        
+                                        ${currentUser.role === 'Support Team' ? `
+                                            <div class="pt-3 border-t border-gray-100">
+                                                <button onclick="event.stopPropagation(); manageTicket('${ticket.id}')" class="w-full btn btn-primary btn-sm">
+                                                    Manage Ticket
+                                                </button>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `}
+            `;
+            
+            contentArea.innerHTML = html;
+            
+        } catch (error) {
+            console.error('Error loading support tickets:', error);
+            showToast('Error loading tickets', 'error');
+        }
+    }
+
+    // ============================================
+    // INBOX VIEW
+    // ============================================
+    async function loadInboxView() {
+        const contentArea = document.getElementById('content-area');
+        
+        const html = `
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-800">Inbox</h1>
+                <p class="text-gray-600 mt-2">Your conversations and messages</p>
+            </div>
+            
+            <div class="custom-card p-12 text-center">
+                <i class="fas fa-comments text-4xl text-gray-300 mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-800 mb-2">Your Messages</h3>
+                <p class="text-gray-600 mb-6">Start a conversation with your sales representative or agent</p>
+                
+                ${currentUser.role === 'Client' ? `
+                    <button onclick="startChatWithSales()" class="btn btn-primary">
+                        <i class="fas fa-comment mr-2"></i>Chat with Sales Team
+                    </button>
+                ` : ''}
+                
+                ${currentUser.role === 'Sales Team' ? `
+                    <div class="space-y-3 max-w-md mx-auto">
+                        <button onclick="loadLeadsView()" class="w-full btn btn-success">
+                            <i class="fas fa-users mr-2"></i>View Leads & Start Chat
+                        </button>
+                        <button onclick="loadOrdersView()" class="w-full btn btn-primary">
+                            <i class="fas fa-tasks mr-2"></i>Chat with Clients
+                        </button>
+                    </div>
+                ` : ''}
+                
+                ${currentUser.role === 'Agent' ? `
+                    <button onclick="loadAgentOrdersView()" class="btn btn-primary">
+                        <i class="fas fa-tasks mr-2"></i>View My Orders & Chat
+                    </button>
+                ` : ''}
+            </div>
+        `;
+        
+        contentArea.innerHTML = html;
+    }
+
+    // ============================================
+    // AGENT ORDERS VIEW
+    // ============================================
+    async function loadAgentOrdersView() {
+        const contentArea = document.getElementById('content-area');
+        
+        try {
+            const ordersSnapshot = await db.collection('orders')
+                .where('agentUid', '==', currentUser.uid)
+                .orderBy('createdAt', 'desc')
+                .get();
+            
+            const orders = [];
+            ordersSnapshot.forEach(doc => {
+                orders.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+            
+            const html = `
+                <div class="mb-8">
+                    <h1 class="text-3xl font-bold text-gray-800">My Orders</h1>
+                    <p class="text-gray-600 mt-2">Orders assigned to you</p>
+                </div>
+                
+                ${orders.length === 0 ? `
+                    <div class="custom-card p-12 text-center">
+                        <i class="fas fa-tasks text-4xl text-gray-300 mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-800 mb-2">No orders assigned</h3>
+                        <p class="text-gray-600">You don't have any orders assigned yet</p>
+                    </div>
+                ` : `
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${orders.map(order => `
+                            <div class="custom-card">
+                                <div class="p-6">
+                                    <div class="flex justify-between items-start mb-4">
+                                        <div class="flex-1">
+                                            <h3 class="font-bold text-gray-800 mb-1 truncate">${order.title}</h3>
+                                            <p class="text-xs text-gray-500">Client: ${order.clientName || 'N/A'}</p>
+                                        </div>
+                                        <span class="status-badge ${getStatusClass(order.status)}">${order.status}</span>
+                                    </div>
+                                    
+                                    <p class="text-gray-600 text-sm mb-4 line-clamp-2">${order.description}</p>
+                                    
+                                    <div class="space-y-3 mb-4">
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-gray-500">Price:</span>
+                                            <span class="font-semibold">$${order.price}</span>
+                                        </div>
+                                        
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-gray-500">Progress:</span>
+                                            <span class="font-medium">${order.progress || 0}%</span>
+                                        </div>
+                                        
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-gray-500">Deadline:</span>
+                                            <span class="font-medium">${order.deadline ? new Date(order.deadline).toLocaleDateString() : 'Not set'}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="space-y-2">
+                                        <button onclick="chatWithClient('${order.id}', '${order.clientUid}')" class="w-full btn btn-primary btn-sm">
+                                            <i class="fas fa-comment mr-2"></i>Chat with Client
+                                        </button>
+                                        
+                                        <button onclick="updateOrderProgress('${order.id}')" class="w-full btn btn-secondary btn-sm">
+                                            <i class="fas fa-edit mr-2"></i>Update Progress
+                                        </button>
+                                        
+                                        <button onclick="uploadOrderFiles('${order.id}')" class="w-full btn btn-success btn-sm">
+                                            <i class="fas fa-upload mr-2"></i>Upload Files
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `}
+            `;
+            
+            contentArea.innerHTML = html;
+            
+        } catch (error) {
+            console.error('Error loading agent orders:', error);
+            showToast('Error loading your orders', 'error');
+        }
+    }
+
+    // ============================================
+    // MODAL FUNCTIONS
+    // ============================================
+    function openLeadModal() {
+        Swal.fire({
+            title: 'Add New Lead',
+            html: `
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Client Name</label>
+                        <input type="text" id="lead-name" class="swal2-input" placeholder="Enter client name" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="lead-email" class="swal2-input" placeholder="Enter client email" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Source</label>
+                        <select id="lead-source" class="swal2-input">
+                            <option value="Website">Website</option>
+                            <option value="Referral">Referral</option>
+                            <option value="LinkedIn">LinkedIn</option>
+                            <option value="Conference">Conference</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <textarea id="lead-notes" class="swal2-textarea" placeholder="Add any notes..." rows="3"></textarea>
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Save Lead',
+            showLoaderOnConfirm: true,
+            preConfirm: async () => {
+                const name = document.getElementById('lead-name').value;
+                const email = document.getElementById('lead-email').value;
+                const source = document.getElementById('lead-source').value;
+                const notes = document.getElementById('lead-notes').value;
+                
+                if (!name || !email) {
+                    Swal.showValidationMessage('Please fill in all required fields');
+                    return false;
+                }
+                
+                try {
+                    await db.collection('leads').add({
+                        clientName: name,
+                        email: email,
+                        source: source,
+                        notes: notes,
+                        salesUid: currentUser.uid,
+                        salesName: currentUser.displayName || currentUser.email,
+                        status: 'new',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    return true;
+                } catch (error) {
+                    Swal.showValidationMessage(`Error: ${error.message}`);
+                    return false;
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showToast('Lead added successfully', 'success');
+                if (currentView === 'leads') {
+                    loadLeadsView();
+                }
+            }
+        });
+    }
+
+    async function convertLeadToClient(leadId, clientName, email) {
+        try {
+            // Create user account for client
+            const password = generatePassword();
+            
+            // In production, you would use Firebase Admin SDK on backend
+            // For now, we'll create a user document with initial password
+            await db.collection('users').doc(email).set({
+                email: email,
+                displayName: clientName,
+                role: 'Client',
+                initialPassword: password,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                salesRep: currentUser.uid,
+                status: 'active'
+            });
+            
+            // Update lead status
+            await db.collection('leads').doc(leadId).update({
+                status: 'converted',
+                clientUid: email, // Using email as ID for simplicity
+                convertedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            // Send email with credentials (in production, use email service)
+            showToast(`Client account created for ${clientName}. Initial password: ${password}`, 'success');
+            
+            // Refresh leads view
+            if (currentView === 'leads') {
+                loadLeadsView();
+            }
+            
+        } catch (error) {
+            console.error('Error converting lead:', error);
+            showToast('Error converting lead', 'error');
+        }
+    }
+
+    function openNewOrderModal() {
+        Swal.fire({
+            title: 'Request New Order',
+            html: `
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Order Title</label>
+                        <input type="text" id="order-title" class="swal2-input" placeholder="Enter order title" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea id="order-description" class="swal2-textarea" placeholder="Describe your requirements..." rows="4" required></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Budget ($)</label>
+                        <input type="number" id="order-budget" class="swal2-input" placeholder="Enter your budget" min="0" step="0.01">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
+                        <input type="date" id="order-deadline" class="swal2-input">
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Submit Request',
+            showLoaderOnConfirm: true,
+            preConfirm: async () => {
+                const title = document.getElementById('order-title').value;
+                const description = document.getElementById('order-description').value;
+                const budget = document.getElementById('order-budget').value;
+                const deadline = document.getElementById('order-deadline').value;
+                
+                if (!title || !description) {
+                    Swal.showValidationMessage('Please fill in all required fields');
+                    return false;
+                }
+                
+                try {
+                    await db.collection('orderRequests').add({
+                        title: title,
+                        description: description,
+                        budget: budget ? parseFloat(budget) : null,
+                        deadline: deadline || null,
+                        clientUid: currentUser.uid,
+                        clientName: currentUser.displayName || currentUser.email,
+                        status: 'pending',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    return true;
+                } catch (error) {
+                    Swal.showValidationMessage(`Error: ${error.message}`);
+                    return false;
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showToast('Order request submitted successfully', 'success');
+            }
+        });
+    }
+
+    function openTicketModal() {
+        Swal.fire({
+            title: 'Create Support Ticket',
+            html: `
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                        <input type="text" id="ticket-subject" class="swal2-input" placeholder="Enter ticket subject" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea id="ticket-description" class="swal2-textarea" placeholder="Describe your issue..." rows="4" required></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                        <select id="ticket-priority" class="swal2-input">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                    ${currentUser.role === 'Support Team' ? `
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Client Email</label>
+                            <input type="email" id="ticket-client-email" class="swal2-input" placeholder="Enter client email">
+                        </div>
+                    ` : ''}
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Create Ticket',
+            showLoaderOnConfirm: true,
+            preConfirm: async () => {
+                const subject = document.getElementById('ticket-subject').value;
+                const description = document.getElementById('ticket-description').value;
+                const priority = document.getElementById('ticket-priority').value;
+                
+                if (!subject || !description) {
+                    Swal.showValidationMessage('Please fill in all required fields');
+                    return false;
+                }
+                
+                try {
+                    const ticketData = {
+                        subject: subject,
+                        description: description,
+                        priority: priority,
+                        status: 'open',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    
+                    if (currentUser.role === 'Client') {
+                        ticketData.clientUid = currentUser.uid;
+                        ticketData.clientName = currentUser.displayName || currentUser.email;
+                    } else if (currentUser.role === 'Support Team') {
+                        const clientEmail = document.getElementById('ticket-client-email').value;
+                        if (clientEmail) {
+                            // Find client by email
+                            const userSnapshot = await db.collection('users')
+                                .where('email', '==', clientEmail)
+                                .where('role', '==', 'Client')
+                                .limit(1)
+                                .get();
+                            
+                            if (!userSnapshot.empty) {
+                                const client = userSnapshot.docs[0];
+                                ticketData.clientUid = client.id;
+                                ticketData.clientName = client.data().displayName || clientEmail;
+                            } else {
+                                Swal.showValidationMessage('Client not found with that email');
+                                return false;
+                            }
+                        }
+                    }
+                    
+                    await db.collection('tickets').add(ticketData);
+                    
+                    return true;
+                } catch (error) {
+                    Swal.showValidationMessage(`Error: ${error.message}`);
+                    return false;
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showToast('Ticket created successfully', 'success');
+                if (currentView === 'support') {
+                    loadSupportView();
+                }
+            }
+        });
+    }
+
+    // ============================================
+    // UTILITY FUNCTIONS
+    // ============================================
+    function getStatusClass(status) {
+        if (!status) return 'status-open';
+        
+        switch(status.toLowerCase()) {
+            case 'open':
+            case 'pending':
+                return 'status-open';
+            case 'in progress':
+            case 'progress':
+                return 'status-progress';
+            case 'review':
+                return 'status-review';
+            case 'completed':
+            case 'closed':
+                return 'status-completed';
+            case 'paid':
+                return 'status-paid';
+            case 'verified':
+                return 'status-verified';
+            default:
+                return 'status-open';
+        }
+    }
+
+    function generatePassword(length = 8) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+        let password = '';
+        for (let i = 0; i < length; i++) {
+            password += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return password;
+    }
+
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type} fade-in`;
+        toast.innerHTML = `
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
+            <span>${message}</span>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 300);
+        }, 3000);
+    }
+
+    // ============================================
+    // NOTIFICATION SYSTEM
+    // ============================================
+    function setupRealtimeListeners() {
+        if (!currentUser) return;
+        
+        // Listen for new orders (for agents)
+        if (currentUser.role === 'Agent') {
+            const orderListener = db.collection('orders')
+                .where('agentUid', '==', currentUser.uid)
+                .where('status', '==', 'pending')
+                .onSnapshot(snapshot => {
+                    snapshot.docChanges().forEach(change => {
+                        if (change.type === 'added') {
+                            const order = change.doc.data();
+                            addNotification({
+                                id: `order_${change.doc.id}`,
+                                type: 'order',
+                                title: 'New Order Assigned',
+                                message: `Order: ${order.title}`,
+                                timestamp: new Date(),
+                                read: false
+                            });
+                        }
+                    });
+                });
+            
+            unsubscribeListeners.push(() => orderListener());
+        }
+        
+        // Listen for new tickets (for support team)
+        if (currentUser.role === 'Support Team') {
+            const ticketListener = db.collection('tickets')
+                .where('status', '==', 'open')
+                .onSnapshot(snapshot => {
+                    snapshot.docChanges().forEach(change => {
+                        if (change.type === 'added') {
+                            const ticket = change.doc.data();
+                            addNotification({
+                                id: `ticket_${change.doc.id}`,
+                                type: 'ticket',
+                                title: 'New Support Ticket',
+                                message: `Ticket: ${ticket.subject}`,
+                                timestamp: new Date(),
+                                read: false
+                            });
+                        }
+                    });
+                });
+            
+            unsubscribeListeners.push(() => ticketListener());
+        }
+        
+        // Listen for new payments (for clients)
+        if (currentUser.role === 'Client') {
+            const paymentListener = db.collection('payments')
+                .where('clientUid', '==', currentUser.uid)
+                .where('status', '==', 'pending')
+                .onSnapshot(snapshot => {
+                    snapshot.docChanges().forEach(change => {
+                        if (change.type === 'added') {
+                            const payment = change.doc.data();
+                            addNotification({
+                                id: `payment_${change.doc.id}`,
+                                type: 'payment',
+                                title: 'New Payment Request',
+                                message: `Amount: $${payment.amount}`,
+                                timestamp: new Date(),
+                                read: false
+                            });
+                        }
+                    });
+                });
+            
+            unsubscribeListeners.push(() => paymentListener());
+        }
+    }
+
+    function addNotification(notification) {
+        notifications.unshift(notification);
+        updateNotificationUI();
+        
+        // Show toast if user is not active on relevant page
+        if (!isUserActive) {
+            showNotificationToast(notification);
+        }
+    }
+
+    function updateNotificationUI() {
+        const countElement = document.getElementById('notification-count');
+        const listElement = document.getElementById('notifications-list');
+        
+        const unreadCount = notifications.filter(n => !n.read).length;
+        
+        if (unreadCount > 0) {
+            countElement.textContent = unreadCount;
+            countElement.classList.remove('hidden');
+        } else {
+            countElement.classList.add('hidden');
+        }
+        
+        if (notifications.length === 0) {
+            listElement.innerHTML = `
+                <div class="p-4 text-center text-gray-500">
+                    <i class="fas fa-bell-slash text-2xl mb-2"></i>
+                    <p>No notifications</p>
+                </div>
+            `;
+        } else {
+            listElement.innerHTML = notifications.slice(0, 5).map(notif => `
+                <div class="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 ${notif.read ? '' : 'bg-blue-50'}"
+                     onclick="handleNotificationClick('${notif.id}')">
+                    <div class="flex items-start space-x-3">
+                        <div class="p-2 rounded-lg ${notif.type === 'order' ? 'bg-blue-500' : notif.type === 'ticket' ? 'bg-purple-500' : 'bg-green-500'}">
+                            <i class="fas ${notif.type === 'order' ? 'fa-tasks' : notif.type === 'ticket' ? 'fa-headset' : 'fa-credit-card'} text-white text-sm"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-800">${notif.title}</p>
+                            <p class="text-xs text-gray-600">${notif.message}</p>
+                            <p class="text-xs text-gray-400 mt-1">${formatDate(notif.timestamp)}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+
+    function handleNotificationClick(notificationId) {
+        const notification = notifications.find(n => n.id === notificationId);
+        if (notification) {
+            notification.read = true;
+            updateNotificationUI();
+            
+            // Navigate to relevant page based on notification type
+            switch(notification.type) {
+                case 'order':
+                    loadView('orders');
+                    break;
+                case 'ticket':
+                    loadView('support');
+                    break;
+                case 'payment':
+                    loadView('payments');
+                    break;
+            }
+            
+            document.getElementById('notifications-panel').classList.add('hidden');
+        }
+    }
+
+    function showNotificationToast(notification) {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-info fade-in`;
+        toast.innerHTML = `
+            <i class="fas ${notification.type === 'order' ? 'fa-tasks' : notification.type === 'ticket' ? 'fa-headset' : 'fa-credit-card'}"></i>
+            <div>
+                <p class="font-medium">${notification.title}</p>
+                <p class="text-sm opacity-90">${notification.message}</p>
+            </div>
+        `;
+        
+        toast.addEventListener('click', () => {
+            handleNotificationClick(notification.id);
+            toast.remove();
+        });
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }
+        }, 5000);
+    }
+
+    function formatDate(date) {
+        if (!date) return 'N/A';
+        const d = new Date(date);
+        const now = new Date();
+        const diff = now - d;
+        const minutes = Math.floor(diff / 60000);
+        const hours = Math.floor(diff / 3600000);
+        const days = Math.floor(diff / 86400000);
+        
+        if (minutes < 1) return 'Just now';
+        if (minutes < 60) return `${minutes}m ago`;
+        if (hours < 24) return `${hours}h ago`;
+        if (days < 7) return `${days}d ago`;
+        
+        return d.toLocaleDateString();
+    }
+
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    document.addEventListener('DOMContentLoaded', () => {
+        // Check if user is already logged in
+        const user = auth.currentUser;
+        if (user) {
+            // User is logged in, show dashboard
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    currentUser = {
+                        uid: user.uid,
+                        email: user.email,
+                        ...doc.data()
+                    };
+                    showDashboard();
+                    setupRealtimeListeners();
+                    updateUserUI();
+                } else {
+                    showAuthScreen();
+                }
+            }).catch(() => {
+                showAuthScreen();
+            });
+        } else {
+            // Show auth screen
+            setTimeout(() => {
+                document.getElementById('loading-screen').classList.add('hidden');
+                showAuthScreen();
+            }, 1000);
+        }
+        
+        // Setup notifications panel toggle
+        document.getElementById('notifications-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const panel = document.getElementById('notifications-panel');
+            panel.classList.toggle('hidden');
+        });
+        
+        // Close notifications panel when clicking outside
+        document.addEventListener('click', (e) => {
+            const panel = document.getElementById('notifications-panel');
+            const btn = document.getElementById('notifications-btn');
+            
+            if (panel && btn && !panel.contains(e.target) && !btn.contains(e.target)) {
+                panel.classList.add('hidden');
+            }
+        });
+        
+        // Track user activity
+        document.addEventListener('mousemove', () => { isUserActive = true; });
+        document.addEventListener('keydown', () => { isUserActive = true; });
+        
+        // Reset activity flag after 30 seconds
+        setInterval(() => {
+            isUserActive = false;
+        }, 30000);
+    });
+
+    // ============================================
+    // PLACEHOLDER FUNCTIONS FOR FUTURE IMPLEMENTATION
+    // ============================================
+    function viewOrderDetails(orderId) {
+        showToast(`Viewing order details: ${orderId}`, 'info');
+        // Implement detailed order view
+    }
+
+    function viewTicketDetails(ticketId) {
+        showToast(`Viewing ticket details: ${ticketId}`, 'info');
+        // Implement detailed ticket view
+    }
+
+    function payPayment(paymentId) {
+        Swal.fire({
+            title: 'Make Payment',
+            html: 'Payment functionality would be implemented here',
+            icon: 'info'
+        });
+    }
+
+    function downloadInvoice(paymentId) {
+        showToast('Invoice download would be implemented here', 'info');
+    }
+
+    function createOrderForLead(leadId) {
+        Swal.fire({
+            title: 'Create Order for Lead',
+            html: 'Order creation for lead would be implemented here',
+            icon: 'info'
+        });
+    }
+
+    function startChatWithSales() {
+        showToast('Starting chat with sales team...', 'info');
+    }
+
+    function chatWithClient(orderId, clientUid) {
+        showToast(`Starting chat with client for order: ${orderId}`, 'info');
+    }
+
+    function updateOrderProgress(orderId) {
+        Swal.fire({
+            title: 'Update Order Progress',
+            input: 'range',
+            inputAttributes: {
+                min: 0,
+                max: 100,
+                step: 1
+            },
+            inputValue: 50,
+            showCancelButton: true,
+            confirmButtonText: 'Update',
+            preConfirm: (progress) => {
+                // Update progress in database
+                return db.collection('orders').doc(orderId).update({
+                    progress: parseInt(progress),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showToast('Progress updated successfully', 'success');
+            }
+        });
+    }
+
+    function uploadOrderFiles(orderId) {
+        showToast('File upload functionality would be implemented here', 'info');
+    }
+
+    function manageTicket(ticketId) {
+        Swal.fire({
+            title: 'Manage Ticket',
+            html: 'Ticket management would be implemented here',
+            icon: 'info'
+        });
+    }
+    </script>
+</body>
+</html>

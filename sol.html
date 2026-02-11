@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Craft | Enterprise Portal</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .glass-panel { background: white; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); }
+        .loader {
+            border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%;
+            width: 20px; height: 20px; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* Transition utilities */
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body class="text-gray-800 h-screen flex flex-col overflow-hidden">
+
+    <div id="auth-screen" class="fixed inset-0 z-50 bg-gray-100 flex items-center justify-center">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md">
+            <h2 class="text-2xl font-bold mb-2 text-center text-blue-900">Research Craft</h2>
+            <p class="text-center text-gray-500 mb-6 text-sm">Enterprise Access Portal</p>
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Email</label>
+                    <input type="email" id="login-email" required class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Password</label>
+                    <input type="password" id="login-pass" required class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <button type="submit" class="w-full bg-blue-900 text-white p-3 rounded-lg font-bold hover:bg-blue-800 transition">Sign In</button>
+            </form>
+            <p id="login-error" class="text-red-500 text-xs mt-4 text-center hidden"></p>
+        </div>
+    </div>
+
+    <div id="app-layout" class="hidden flex-1 flex overflow-hidden">
+        
+        <aside class="w-64 bg-slate-900 text-white flex flex-col shadow-xl z-20">
+            <div class="h-16 flex items-center px-6 bg-slate-800 border-b border-slate-700">
+                <i class="fa-solid fa-flask text-blue-400 mr-2"></i>
+                <span class="font-bold tracking-tight">Research Craft</span>
+            </div>
+            
+            <div class="p-4 border-b border-slate-700 bg-slate-800/50">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-sm" id="nav-avatar">U</div>
+                    <div>
+                        <p class="text-sm font-bold truncate w-32" id="nav-name">User</p>
+                        <p class="text-[10px] text-blue-200 uppercase tracking-wider" id="nav-role">Role</p>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="flex-1 overflow-y-auto py-4 px-2 space-y-1" id="sidebar-menu">
+                </nav>
+
+            <div class="p-4 border-t border-slate-700">
+                <button onclick="handleLogout()" class="flex items-center w-full px-4 py-2 text-sm text-red-400 hover:bg-slate-800 rounded transition">
+                    <i class="fa-solid fa-arrow-right-from-bracket mr-3"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex-1 flex flex-col relative bg-gray-50">
+            <header class="h-16 bg-white border-b border-gray-200 flex justify-between items-center px-8 shadow-sm">
+                <h2 class="text-xl font-bold text-gray-800" id="page-title">Dashboard</h2>
+                <div class="flex items-center gap-4">
+                    <span id="connection-indicator" class="flex items-center gap-2 text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full border border-green-100">
+                        <span class="w-2 h-2 rounded-full bg-green-600 animate-pulse"></span> Live
+                    </span>
+                </div>
+            </header>
+
+            <div id="app-container" class="flex-1 overflow-y-auto p-8 relative">
+                <div class="flex justify-center items-center h-full text-gray-400">
+                    <div class="loader mr-2"></div> Loading data...
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="lead-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-gray-800">New Lead Details</h3>
+                <button onclick="closeModal('lead-modal')" class="text-gray-400 hover:text-red-500"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <form id="lead-form" onsubmit="handleLeadSubmit(event)" class="p-6 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 uppercase">Client Name</label>
+                        <input type="text" name="name" required class="w-full border p-2 rounded text-sm">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 uppercase">Email</label>
+                        <input type="email" name="email" required class="w-full border p-2 rounded text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase">Title / Interest</label>
+                    <input type="text" name="title" required class="w-full border p-2 rounded text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 uppercase">Source</label>
+                        <select name="source" class="w-full border p-2 rounded text-sm bg-white">
+                            <option>LinkedIn</option>
+                            <option>Website</option>
+                            <option>Referral</option>
+                            <option>Cold Call</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 uppercase">Demand Level</label>
+                        <select name="demand" class="w-full border p-2 rounded text-sm bg-white">
+                            <option>High</option>
+                            <option>Medium</option>
+                            <option>Low</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase">Description</label>
+                    <textarea name="description" rows="2" class="w-full border p-2 rounded text-sm"></textarea>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase">Internal Notes</label>
+                    <textarea name="notes" rows="2" class="w-full border p-2 rounded text-sm bg-yellow-50 placeholder-gray-400" placeholder="Private notes..."></textarea>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700">Save Lead</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="order-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-gray-800">Create Order</h3>
+                <button onclick="closeModal('order-modal')" class="text-gray-400 hover:text-red-500"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <form id="order-form" onsubmit="handleOrderSubmit(event)" class="p-6 space-y-4">
+                <input type="hidden" id="order-client-uid">
+                <input type="hidden" id="order-client-email">
+                
+                <div class="bg-blue-50 p-3 rounded text-sm text-blue-800 mb-2">
+                    Creating order for: <span id="order-client-name" class="font-bold"></span>
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase">Order Title</label>
+                    <input type="text" id="order-title" required class="w-full border p-2 rounded text-sm" placeholder="e.g. Molecular Analysis v2">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase">Agreed Price ($)</label>
+                    <input type="number" id="order-price" required class="w-full border p-2 rounded text-sm" placeholder="0.00">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase">Scope Description</label>
+                    <textarea id="order-desc" rows="3" required class="w-full border p-2 rounded text-sm"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700">Generate Order</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="ticket-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-gray-800">Create Support Ticket</h3>
+                <button onclick="closeModal('ticket-modal')" class="text-gray-400 hover:text-red-500"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <form id="ticket-form" onsubmit="handleTicketSubmit(event)" class="p-6 space-y-4">
+                
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase">Select Relevant Order</label>
+                    <select id="ticket-order-select" required class="w-full border p-2 rounded text-sm bg-white" onchange="updateOrderPreview(this)">
+                        <option value="">-- Loading Orders --</option>
+                    </select>
+                </div>
+
+                <div id="order-preview-box" class="hidden bg-gray-100 p-3 rounded text-xs text-gray-600 space-y-1">
+                    <p><strong>ID:</strong> <span id="preview-id"></span></p>
+                    <p><strong>Price:</strong> $<span id="preview-price"></span></p>
+                    <p class="truncate"><strong>Desc:</strong> <span id="preview-desc"></span></p>
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase">Subject</label>
+                    <input type="text" id="ticket-subject" required class="w-full border p-2 rounded text-sm">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase">Issue Description</label>
+                    <textarea id="ticket-desc" rows="4" required class="w-full border p-2 rounded text-sm"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-purple-600 text-white py-2 rounded font-bold hover:bg-purple-700">Submit Ticket</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY", // TODO: Put real keys here
+            authDomain: "research-craft.firebaseapp.com",
+            projectId: "research-craft",
+            storageBucket: "research-craft.firebasestorage.app",
+            messagingSenderId: "284823836570",
+            appId: "1:284823836570:web:fb0d93cdf92368525d8c23"
+        };
+        
+        // Brevo Email Key (Warning: Client-side usage is risky for production, use backend proxy in real ent. apps)
+        const BREVO_API_KEY = "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";
+
+        // Initialize Firebase
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // State
+        let currentUser = null;
+        let unsubscribeListeners = [];
+
+        // --- AUTH & ROUTING ---
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                // Fetch Role
+                const doc = await db.collection('users').doc(user.uid).get();
+                if (doc.exists) {
+                    currentUser = { uid: user.uid, ...doc.data() };
+                    document.getElementById('auth-screen').classList.add('hidden');
+                    document.getElementById('app-layout').classList.remove('hidden');
+                    
+                    // Setup UI
+                    document.getElementById('nav-name').innerText = currentUser.displayName || user.email;
+                    document.getElementById('nav-role').innerText = currentUser.role;
+                    document.getElementById('nav-avatar').innerText = (currentUser.displayName || 'U').charAt(0).toUpperCase();
+
+                    renderSidebar();
+                    // Default redirect based on role
+                    if(currentUser.role === 'Sales Team') loadLeadsView();
+                    else if(currentUser.role === 'Support Team') loadTicketsView();
+                    else if(currentUser.role === 'Client') loadClientOrdersView();
+                    else loadDashboardView();
+                } else {
+                    alert("User record not found in database.");
+                    auth.signOut();
+                }
+            } else {
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('app-layout').classList.add('hidden');
+                currentUser = null;
+            }
+        });
+
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-pass').value;
+            auth.signInWithEmailAndPassword(email, pass).catch(err => {
+                const errBox = document.getElementById('login-error');
+                errBox.innerText = err.message;
+                errBox.classList.remove('hidden');
+            });
+        });
+
+        function handleLogout() {
+            unsubscribeListeners.forEach(u => u()); // Clean up listeners
+            unsubscribeListeners = [];
+            auth.signOut();
+        }
+
+        function renderSidebar() {
+            const menu = document.getElementById('sidebar-menu');
+            menu.innerHTML = '';
+
+            const linkClass = "flex items-center px-4 py-3 text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition cursor-pointer";
+            const activeClass = "bg-blue-900 text-white border-r-4 border-blue-400";
+
+            // Common
+            menu.innerHTML += `<div onclick="loadDashboardView()" class="${linkClass}"><i class="fa-solid fa-chart-line w-6"></i> Dashboard</div>`;
+
+            if (currentUser.role === 'Sales Team') {
+                menu.innerHTML += `
+                    <div onclick="loadLeadsView()" class="${linkClass}"><i class="fa-solid fa-filter-circle-dollar w-6"></i> Leads & CRM</div>
+                    <div onclick="loadSalesOrdersView()" class="${linkClass}"><i class="fa-solid fa-file-invoice w-6"></i> All Orders</div>
+                `;
+            } else if (currentUser.role === 'Support Team') {
+                menu.innerHTML += `
+                    <div onclick="loadTicketsView()" class="${linkClass}"><i class="fa-solid fa-headset w-6"></i> Help Desk</div>
+                `;
+            } else if (currentUser.role === 'Client') {
+                menu.innerHTML += `
+                    <div onclick="loadClientOrdersView()" class="${linkClass}"><i class="fa-solid fa-box-open w-6"></i> My Orders</div>
+                    <div onclick="loadClientTicketsView()" class="${linkClass}"><i class="fa-solid fa-ticket w-6"></i> My Tickets</div>
+                `;
+            }
+        }
+
+        // --- VIEWS ---
+
+        // 1. CLEAR VIEW UTILITY
+        function clearView(title) {
+            unsubscribeListeners.forEach(u => u());
+            unsubscribeListeners = [];
+            document.getElementById('page-title').innerText = title;
+            const container = document.getElementById('app-container');
+            container.innerHTML = '<div class="flex justify-center mt-10"><div class="loader"></div></div>';
+            return container;
+        }
+
+        // 2. LEADS VIEW (SALES)
+        function loadLeadsView() {
+            const container = clearView("Sales Pipeline");
+            
+            const html = `
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-bold text-gray-700">Prospective Clients</h3>
+                    <button onclick="document.getElementById('lead-modal').classList.remove('hidden')" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 text-sm font-bold">
+                        <i class="fa-solid fa-plus mr-2"></i> Add Lead
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="leads-grid"></div>
+            `;
+            container.innerHTML = html;
+
+            const sub = db.collection('leads').onSnapshot(snap => {
+                const grid = document.getElementById('leads-grid');
+                grid.innerHTML = '';
+                
+                if (snap.empty) {
+                    grid.innerHTML = '<p class="text-gray-400 col-span-3 text-center py-10">No leads found.</p>';
+                    return;
+                }
+
+                snap.forEach(doc => {
+                    const lead = doc.data();
+                    // Invite Button Logic: Check if they are already converted or invited
+                    const inviteBtn = lead.status === 'invited' 
+                        ? `<span class="text-green-600 text-xs font-bold"><i class="fa-solid fa-check"></i> Invited</span>` 
+                        : `<button onclick="inviteClient('${doc.id}', '${lead.name}', '${lead.email}')" class="text-blue-600 hover:underline text-xs font-bold"><i class="fa-solid fa-envelope mr-1"></i> Invite to App</button>`;
+
+                    const card = `
+                        <div class="glass-panel p-5 rounded-lg relative group fade-in">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-bold text-gray-800">${lead.name}</h4>
+                                <span class="bg-gray-100 text-gray-600 text-[10px] px-2 py-1 rounded uppercase font-bold">${lead.source}</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mb-1"><i class="fa-solid fa-envelope mr-1"></i> ${lead.email}</p>
+                            <p class="text-sm font-medium text-blue-900 mb-2">${lead.title}</p>
+                            <p class="text-xs text-gray-600 bg-gray-50 p-2 rounded mb-3">${lead.description}</p>
+                            
+                            <div class="border-t border-gray-100 pt-3 flex justify-between items-center">
+                                ${inviteBtn}
+                                <div class="flex gap-2">
+                                    <button onclick="openOrderModalForLead('${doc.id}', '${lead.name}', '${lead.email}')" class="text-green-600 hover:text-green-800" title="Create Order"><i class="fa-solid fa-file-invoice-dollar"></i></button>
+                                    <button onclick="deleteLead('${doc.id}')" class="text-red-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-2 text-[10px] text-gray-400">Demand: ${lead.demand}</div>
+                        </div>
+                    `;
+                    grid.insertAdjacentHTML('beforeend', card);
+                });
+            });
+            unsubscribeListeners.push(sub);
+        }
+
+        // 3. SUPPORT TICKETS VIEW (SUPPORT TEAM)
+        function loadTicketsView() {
+            const container = clearView("Support Desk");
+            
+            container.innerHTML = `
+                <div class="flex gap-6 h-full">
+                    <div class="flex-1 flex flex-col">
+                        <h4 class="font-bold text-gray-700 mb-4 flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-red-500"></span> Open Tickets
+                        </h4>
+                        <div id="tickets-open" class="space-y-4 overflow-y-auto pr-2 pb-10"></div>
+                    </div>
+                    <div class="w-px bg-gray-200"></div>
+                    <div class="flex-1 flex flex-col">
+                        <h4 class="font-bold text-gray-700 mb-4 flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-green-500"></span> Resolved
+                        </h4>
+                        <div id="tickets-closed" class="space-y-4 overflow-y-auto pr-2 pb-10"></div>
+                    </div>
+                </div>
+            `;
+
+            const sub = db.collection('tickets').orderBy('createdAt', 'desc').onSnapshot(snap => {
+                const openContainer = document.getElementById('tickets-open');
+                const closedContainer = document.getElementById('tickets-closed');
+                openContainer.innerHTML = '';
+                closedContainer.innerHTML = '';
+
+                snap.forEach(doc => {
+                    const t = doc.data();
+                    const card = `
+                        <div class="bg-white border border-gray-200 p-4 rounded-lg shadow-sm fade-in">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-xs font-mono text-gray-400">#${doc.id.substr(0,5)}</span>
+                                <span class="text-[10px] font-bold uppercase ${t.status === 'open' ? 'text-red-600 bg-red-50' : 'text-green-600 bg-green-50'} px-2 py-0.5 rounded">${t.status}</span>
+                            </div>
+                            <h5 class="font-bold text-gray-800 text-sm mb-1">${t.subject}</h5>
+                            <p class="text-xs text-gray-600 mb-3 line-clamp-2">${t.description}</p>
+                            
+                            <div class="bg-slate-50 p-2 rounded text-[10px] text-slate-600 mb-3 border border-slate-100">
+                                <strong>Order Context:</strong> ${t.orderTitle || 'N/A'} (Price: $${t.orderPrice || 0})
+                            </div>
+
+                            <div class="flex justify-between items-center pt-2 border-t border-gray-100">
+                                <span class="text-[10px] text-gray-400">${t.clientName}</span>
+                                <div class="flex gap-2">
+                                    ${t.status === 'open' 
+                                        ? `<button onclick="updateTicketStatus('${doc.id}', 'closed')" class="text-xs bg-white border border-green-600 text-green-600 px-2 py-1 rounded hover:bg-green-50">Close</button>`
+                                        : `<button onclick="updateTicketStatus('${doc.id}', 'open')" class="text-xs bg-white border border-gray-400 text-gray-600 px-2 py-1 rounded hover:bg-gray-100">Reopen</button>`
+                                    }
+                                    <button onclick="deleteTicket('${doc.id}')" class="text-red-400 hover:text-red-600 px-2"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    if (t.status === 'open') openContainer.insertAdjacentHTML('beforeend', card);
+                    else closedContainer.insertAdjacentHTML('beforeend', card);
+                });
+            });
+            unsubscribeListeners.push(sub);
+        }
+
+        // 4. CLIENT VIEWS
+        function loadClientTicketsView() {
+            const container = clearView("My Support Tickets");
+            container.innerHTML = `
+                 <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-bold text-gray-700">Ticket History</h3>
+                    <button onclick="openClientTicketModal()" class="bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-700 text-sm font-bold">
+                        <i class="fa-solid fa-plus mr-2"></i> New Ticket
+                    </button>
+                </div>
+                <div id="my-tickets-list" class="space-y-4"></div>
+            `;
+
+            const sub = db.collection('tickets').where('clientUid', '==', currentUser.uid).onSnapshot(snap => {
+                const list = document.getElementById('my-tickets-list');
+                list.innerHTML = '';
+                snap.forEach(doc => {
+                    const t = doc.data();
+                    list.innerHTML += `
+                        <div class="glass-panel p-4 rounded flex justify-between items-center">
+                            <div>
+                                <p class="font-bold text-sm">${t.subject}</p>
+                                <p class="text-xs text-gray-500">Ref: ${t.orderTitle}</p>
+                            </div>
+                            <span class="text-xs font-bold px-2 py-1 rounded ${t.status==='open'?'bg-red-100 text-red-700':'bg-green-100 text-green-700'}">${t.status.toUpperCase()}</span>
+                        </div>
+                    `;
+                });
+            });
+            unsubscribeListeners.push(sub);
+        }
+
+        function loadClientOrdersView() {
+            const container = clearView("My Orders");
+            container.innerHTML = `<div id="client-orders-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>`;
+            
+            const sub = db.collection('orders').where('clientUid', '==', currentUser.uid).onSnapshot(snap => {
+                const grid = document.getElementById('client-orders-grid');
+                grid.innerHTML = '';
+                snap.forEach(doc => {
+                    const o = doc.data();
+                    grid.innerHTML += `
+                        <div class="glass-panel p-6 rounded-lg border-l-4 border-blue-600">
+                            <h4 class="font-bold text-lg mb-1">${o.title}</h4>
+                            <p class="text-sm text-gray-600 mb-4">${o.description}</p>
+                            <div class="flex justify-between items-center font-bold">
+                                <span class="text-xl text-gray-800">$${o.price}</span>
+                                <span class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded">ACTIVE</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+            unsubscribeListeners.push(sub);
+        }
+
+        function loadSalesOrdersView() {
+            const container = clearView("All Orders");
+            container.innerHTML = `<div id="all-orders-list" class="bg-white rounded shadow overflow-hidden"></div>`;
+            
+            const sub = db.collection('orders').orderBy('createdAt', 'desc').onSnapshot(snap => {
+                const list = document.getElementById('all-orders-list');
+                if(snap.empty) { list.innerHTML = '<div class="p-6 text-center text-gray-400">No orders yet.</div>'; return; }
+                
+                let html = `<table class="min-w-full text-sm text-left">
+                    <thead class="bg-gray-50 text-gray-500 font-bold uppercase text-xs"><tr><th class="px-6 py-3">Client</th><th class="px-6 py-3">Title</th><th class="px-6 py-3">Price</th><th class="px-6 py-3">Date</th></tr></thead>
+                    <tbody class="divide-y divide-gray-200">`;
+                
+                snap.forEach(doc => {
+                    const o = doc.data();
+                    html += `<tr>
+                        <td class="px-6 py-4 font-medium">${o.clientName}</td>
+                        <td class="px-6 py-4">${o.title}</td>
+                        <td class="px-6 py-4">$${o.price}</td>
+                        <td class="px-6 py-4 text-gray-500">${o.createdAt?.toDate().toLocaleDateString() || '-'}</td>
+                    </tr>`;
+                });
+                html += `</tbody></table>`;
+                list.innerHTML = html;
+            });
+            unsubscribeListeners.push(sub);
+        }
+
+        function loadDashboardView() {
+            const container = clearView("Dashboard");
+            container.innerHTML = `
+                <div class="text-center mt-20">
+                    <i class="fa-solid fa-flask text-6xl text-blue-200 mb-4"></i>
+                    <h2 class="text-2xl font-bold text-gray-800">Welcome, ${currentUser.displayName}</h2>
+                    <p class="text-gray-500">Select an option from the sidebar to begin.</p>
+                </div>
+            `;
+        }
+
+
+        // --- ACTION HANDLERS ---
+
+        // 1. ADD LEAD
+        async function handleLeadSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const data = {
+                name: form.name.value,
+                email: form.email.value,
+                title: form.title.value,
+                source: form.source.value,
+                demand: form.demand.value,
+                description: form.description.value,
+                notes: form.notes.value,
+                status: 'new', // new, invited, converted
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            
+            try {
+                await db.collection('leads').add(data);
+                closeModal('lead-modal');
+                form.reset();
+            } catch (err) { alert(err.message); }
+        }
+
+        async function deleteLead(id) {
+            if(confirm('Delete this lead?')) await db.collection('leads').doc(id).delete();
+        }
+
+        // 2. INVITE CLIENT (Create User + Email)
+        async function inviteClient(leadId, name, email) {
+            const btn = event.target;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+            btn.disabled = true;
+
+            const username = 'user_' + Math.random().toString(36).substr(2, 6);
+            const password = Math.random().toString(36).slice(-8) + '!';
+
+            try {
+                // Provision User (Using Secondary App hack to keep Admin logged in)
+                const secondaryApp = firebase.initializeApp(firebaseConfig, "Prov_" + Date.now());
+                const userCred = await secondaryApp.auth().createUserWithEmailAndPassword(email, password);
+                
+                // Save User DB
+                await db.collection('users').doc(userCred.user.uid).set({
+                    displayName: name,
+                    email: email,
+                    username: username,
+                    role: 'Client',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Update Lead Status
+                await db.collection('leads').doc(leadId).update({ status: 'invited', clientUid: userCred.user.uid });
+
+                // Send Email (Brevo)
+                await sendBrevoEmail(name, email, username, password);
+                
+                await secondaryApp.delete();
+                alert(`User created! Credentials sent to ${email}`);
+
+            } catch (err) {
+                alert("Error inviting: " + err.message);
+                btn.innerHTML = "Retry Invite";
+                btn.disabled = false;
+            }
+        }
+
+        async function sendBrevoEmail(name, email, username, password) {
+            const htmlContent = `
+                <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                    <h2 style="color: #1e3a8a;">Welcome to Research Connect</h2>
+                    <p>Hello <strong>${name}</strong>,</p>
+                    <p>Your client account has been created.</p>
+                    <div style="background: #f3f4f6; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                        <p><strong>Username:</strong> ${username}</p>
+                        <p><strong>Password:</strong> ${password}</p>
+                    </div>
+                    <a href="https://your-domain.com" style="background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Login Portal</a>
+                </div>
+            `;
+            
+            await fetch("https://api.brevo.com/v3/smtp/email", {
+                method: "POST",
+                headers: { "api-key": BREVO_API_KEY, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    sender: { name: "Research Connect", email: "noreply.admin@researchconnect.in" },
+                    to: [{ email: email, name: name }],
+                    subject: "Your Account Credentials",
+                    htmlContent: htmlContent
+                })
+            });
+        }
+
+        // 3. CREATE ORDER
+        async function openOrderModalForLead(leadId, name, email) {
+            // Check if user exists first (basic check via lead status or querying users)
+            const snap = await db.collection('users').where('email', '==', email).get();
+            if (snap.empty) {
+                alert("Please invite this lead to become a Client User before creating an order.");
+                return;
+            }
+            const user = snap.docs[0];
+            
+            document.getElementById('order-client-uid').value = user.id;
+            document.getElementById('order-client-email').value = email;
+            document.getElementById('order-client-name').innerText = name;
+            document.getElementById('order-modal').classList.remove('hidden');
+        }
+
+        async function handleOrderSubmit(e) {
+            e.preventDefault();
+            const form = document.getElementById('order-form'); // Use direct ID
+            const data = {
+                clientUid: document.getElementById('order-client-uid').value,
+                clientName: document.getElementById('order-client-name').innerText,
+                title: document.getElementById('order-title').value,
+                price: parseFloat(document.getElementById('order-price').value),
+                description: document.getElementById('order-desc').value,
+                status: 'active',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            
+            try {
+                await db.collection('orders').add(data);
+                closeModal('order-modal');
+                form.reset();
+                alert("Order created successfully!");
+            } catch (err) { alert(err.message); }
+        }
+
+        // 4. TICKETS
+        async function openClientTicketModal() {
+            const select = document.getElementById('ticket-order-select');
+            select.innerHTML = '<option>Loading...</option>';
+            document.getElementById('ticket-modal').classList.remove('hidden');
+
+            const snap = await db.collection('orders').where('clientUid', '==', currentUser.uid).get();
+            select.innerHTML = '<option value="">Select an Order...</option>';
+            
+            snap.forEach(doc => {
+                const o = doc.data();
+                const opt = document.createElement('option');
+                opt.value = doc.id;
+                opt.text = o.title;
+                opt.dataset.desc = o.description;
+                opt.dataset.price = o.price;
+                select.appendChild(opt);
+            });
+        }
+
+        function updateOrderPreview(select) {
+            const box = document.getElementById('order-preview-box');
+            if(!select.value) { box.classList.add('hidden'); return; }
+            
+            const opt = select.options[select.selectedIndex];
+            document.getElementById('preview-id').innerText = select.value.substr(0,8)+'...';
+            document.getElementById('preview-desc').innerText = opt.dataset.desc;
+            document.getElementById('preview-price').innerText = opt.dataset.price;
+            box.classList.remove('hidden');
+        }
+
+        async function handleTicketSubmit(e) {
+            e.preventDefault();
+            const orderId = document.getElementById('ticket-order-select').value;
+            if(!orderId) { alert("Please select an order"); return; }
+            
+            const orderSelect = document.getElementById('ticket-order-select');
+            const orderTitle = orderSelect.options[orderSelect.selectedIndex].text;
+            const orderPrice = orderSelect.options[orderSelect.selectedIndex].dataset.price;
+
+            const data = {
+                clientUid: currentUser.uid,
+                clientName: currentUser.displayName,
+                orderId: orderId,
+                orderTitle: orderTitle,
+                orderPrice: orderPrice,
+                subject: document.getElementById('ticket-subject').value,
+                description: document.getElementById('ticket-desc').value,
+                status: 'open',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            await db.collection('tickets').add(data);
+            closeModal('ticket-modal');
+            document.getElementById('ticket-form').reset();
+        }
+
+        async function updateTicketStatus(id, status) {
+            await db.collection('tickets').doc(id).update({ status });
+        }
+
+        async function deleteTicket(id) {
+            if(confirm('Delete ticket?')) await db.collection('tickets').doc(id).delete();
+        }
+
+        // Utils
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+    </script>
+</body>
+</html>

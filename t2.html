@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>GitHub Storage + Firebase Uploads</title>
+
+<!-- Firebase v8 -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #ffffff;
+    color: #000;
+    padding: 40px;
+  }
+  h2 { margin-bottom: 10px; }
+  input, button {
+    padding: 10px;
+    margin: 6px 0;
+  }
+  button {
+    background: #8b5cf6;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .box {
+    border: 1px solid #222;
+    padding: 20px;
+    margin-bottom: 25px;
+  }
+  .file {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    font-size: 14px;
+  }
+  .file a {
+    color: #2563eb;
+    text-decoration: none;
+  }
+  .muted {
+    color: #666;
+    font-size: 12px;
+  }
+  .progress-wrap {
+    width: 100%;
+    height: 12px;
+    background: #eee;
+    margin-top: 10px;
+  }
+  .progress-bar {
+    height: 12px;
+    width: 0%;
+    background: #8b5cf6;
+    transition: width 0.2s;
+  }
+</style>
+</head>
+<body>
+
+<h2>GitHub Pages Storage (Per Firebase User)</h2>
+<p class="muted">Anonymous Firebase auth · Firestore index · GitHub Pages files</p>
+
+<div class="box">
+  <h3>Upload File</h3>
+  <input type="file" id="file" />
+  <br>
+  <button onclick="upload()">Upload</button>
+
+  <div class="progress-wrap">
+    <div id="progress-bar" class="progress-bar"></div>
+  </div>
+  <p id="progress-text" class="muted">0%</p>
+</div>
+
+<div class="box">
+  <h3>My Uploaded Files</h3>
+  <button onclick="fetchFiles()">Load My Files</button>
+  <div id="results"></div>
+</div>
+
+<script>
+/* ================= CONFIG ================= */
+
+// ⚠️ INSECURE TOKEN (INTENTIONAL)
+const GITHUB_TOKEN =
+"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";
+
+// GitHub repo
+const GITHUB_USERNAME = "svmcoder";
+const REPO_NAME = "storage";
+const BRANCH = "main";
+const ROOT_FOLDER = "uploads";
+
+// Firebase
+firebase.initializeApp({
+  apiKey: "AIzaSyBDeDc6pWhghXmGYg9QYQ3nVAGTpo1u5AM",
+  authDomain: "research-craft.firebaseapp.com",
+  projectId: "research-craft"
+});
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+/* ================= AUTH ================= */
+
+auth.onAuthStateChanged(user => {
+  if (!user) {
+    auth.signInAnonymously();
+  } else {
+    console.log("Logged in as:", user.uid);
+  }
+});
+
+/* ================= HELPERS ================= */
+
+function genCode() {
+  return Math.random().toString(36).substring(2, 10).toUpperCase();
+}
+
+/* ================= UPLOAD ================= */
+
+async function upload() {
+  const file = document.getElementById("file").files[0];
+  const user = auth.currentUser;
+
+  if (!user) return alert("Auth not ready");
+  if (!file) return alert("Select a file");
+
+  const userId = user.uid;
+  const ext = file.name.split(".").pop();
+  const baseName = file.name.replace(/\.[^/.]+$/, "");
+  const code = genCode();
+  const finalName = `${baseName}_${code}.${ext}`;
+  const path = `${ROOT_FOLDER}/${userId}/${finalName}`;
+
+  const bar = document.getElementById("progress-bar");
+  const text = document.getElementById("progress-text");
+
+  bar.style.width = "0%";
+  text.innerText = "0%";
+
+  const reader = new FileReader();
+
+  // REAL progress (file read)
+  reader.onprogress = e => {
+    if (e.lengthComputable) {
+      const pct = Math.round((e.loaded / e.total) * 70);
+      bar.style.width = pct + "%";
+      text.innerText = pct + "%";
+    }
+  };
+
+  reader.onload = async () => {
+    bar.style.width = "75%";
+    text.innerText = "75% (uploading)";
+
+    const base64 = reader.result.split(",")[1];
+
+    const res = await fetch(
+      `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${path}`,
+      {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${GITHUB_TOKEN}`,
+          "Accept": "application/vnd.github+json"
+        },
+        body: JSON.stringify({
+          message: `upload ${finalName}`,
+          content: base64,
+          branch: BRANCH
+        })
+      }
+    );
+
+    if (!res.ok) {
+      bar.style.width = "0%";
+      text.innerText = "Upload failed";
+      return alert("GitHub upload failed");
+    }
+
+    bar.style.width = "90%";
+    text.innerText = "90% (saving metadata)";
+
+    const publicUrl =
+      `https://${GITHUB_USERNAME}.github.io/${REPO_NAME}/${path}`;
+
+    await db.collection("uploads").add({
+      userId,
+      filename: finalName,
+      path,
+      url: publicUrl,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    bar.style.width = "100%";
+    text.innerText = "100% Complete";
+
+    window.open(publicUrl, "_blank");
+  };
+
+  reader.readAsDataURL(file);
+}
+
+/* ================= FETCH ================= */
+
+async function fetchFiles() {
+  const results = document.getElementById("results");
+  results.innerHTML = "<p class='muted'>Loading...</p>";
+
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const snap = await db
+    .collection("uploads")
+    .where("userId", "==", user.uid)
+    .get(); // ❌ no orderBy → ❌ no index error
+
+  if (snap.empty) {
+    results.innerHTML = "<p class='muted'>No uploads found</p>";
+    return;
+  }
+
+  const files = snap.docs
+    .map(d => d.data())
+    .sort((a, b) =>
+      (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+    );
+
+  results.innerHTML = "";
+
+  files.forEach(f => {
+    results.innerHTML += `
+      <div class="file">
+        <strong>${f.filename}</strong><br>
+        <a href="${f.url}" target="_blank">Open file</a><br>
+        <span class="muted">
+          ${f.createdAt ? new Date(f.createdAt.seconds * 1000).toLocaleString() : ""}
+        </span>
+      </div>
+    `;
+  });
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile | Research Connect</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F3F4F6; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+        /* Hide Scrollbar for specific elements */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Glassmorphism */
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+
+        /* Tab Transitions */
+        .tab-content { display: none; animation: fadeIn 0.2s ease-in-out; }
+        .tab-content.active { display: block; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Chat Bubbles */
+        .chat-bubble { max-width: 80%; border-radius: 12px; padding: 10px 14px; font-size: 0.9rem; position: relative; }
+        .chat-agent { background: #EFF6FF; color: #1E3A8A; border-bottom-left-radius: 2px; }
+        .chat-client { background: #2563EB; color: white; border-bottom-right-radius: 2px; margin-left: auto; }
+    </style>
+</head>
+<body class="text-gray-800 h-screen flex overflow-hidden">
+
+    <aside class="hidden md:flex w-64 bg-white border-r border-gray-200 flex-col fixed h-full z-30">
+        <div class="h-16 flex items-center px-6 border-b border-gray-100">
+            <i class="fa-solid fa-flask text-blue-600 text-xl mr-2"></i>
+            <span class="font-bold text-lg tracking-tight">Research Connect</span>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+            <a href="#" class="flex items-center px-3 py-2.5 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-50 hover:text-blue-600 transition-colors">
+                <i class="fa-solid fa-chart-pie w-6 text-center"></i> Dashboard
+            </a>
+            <a href="#" class="flex items-center px-3 py-2.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg transition-colors">
+                <i class="fa-solid fa-user w-6 text-center"></i> Profile & Orders
+            </a>
+            <a href="#" class="flex items-center px-3 py-2.5 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-50 hover:text-blue-600 transition-colors">
+                <i class="fa-solid fa-folder-open w-6 text-center"></i> Documents
+            </a>
+            <a href="#" class="flex items-center px-3 py-2.5 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-50 hover:text-blue-600 transition-colors">
+                <i class="fa-solid fa-wallet w-6 text-center"></i> Payments
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-gray-100">
+            <button class="flex items-center w-full px-3 py-2 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors">
+                <i class="fa-solid fa-arrow-right-from-bracket w-6 text-center"></i> Logout
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 md:ml-64 h-full overflow-y-auto pb-20 md:pb-0 relative scroll-smooth">
+        
+        <header class="md:hidden bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-20 flex justify-between items-center">
+            <div class="flex items-center gap-2 text-blue-600">
+                <i class="fa-solid fa-flask text-lg"></i>
+                <span class="font-bold text-gray-900">Research Connect</span>
+            </div>
+            <button class="text-gray-500"><i class="fa-solid fa-bell"></i></button>
+        </header>
+
+        <div class="max-w-7xl mx-auto p-4 md:p-8 space-y-6">
+
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-10"></div>
+                
+                <div class="relative flex flex-col md:flex-row gap-6 items-start md:items-end">
+                    <div class="relative">
+                        <img src="https://ui-avatars.com/api/?name=Dr+John+Doe&background=2563EB&color=fff&size=128" alt="Profile" class="w-24 h-24 rounded-full border-4 border-white shadow-md">
+                        <div class="absolute bottom-1 right-1 bg-green-500 w-5 h-5 rounded-full border-2 border-white" title="Online"></div>
+                    </div>
+
+                    <div class="flex-1">
+                        <div class="flex flex-col md:flex-row md:items-center gap-2 mb-1">
+                            <h1 id="disp-name" class="text-2xl font-bold text-gray-900">Dr. John Doe</h1>
+                            <span id="role-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 w-fit">Researcher</span>
+                        </div>
+                        <p id="username" class="text-sm text-gray-500 font-mono mb-3">@johndoe_phd</p>
+                        
+                        <div class="flex items-center gap-6 text-sm">
+                            <div class="flex items-center gap-1">
+                                <i class="fa-solid fa-star text-yellow-400"></i>
+                                <span class="font-bold text-gray-900">4.9</span>
+                                <span class="text-gray-400">(128 Reviews)</span>
+                            </div>
+                            <div class="flex items-center gap-1 text-gray-600">
+                                <i class="fa-solid fa-clipboard-check"></i>
+                                <span>24 Completed Orders</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition shadow-sm">
+                        <i class="fa-solid fa-pen-to-square mr-1"></i> Edit Profile
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+                    <h2 class="text-lg font-bold text-gray-900">Research Orders</h2>
+                    
+                    <div class="flex bg-gray-100 p-1 rounded-lg">
+                        <button class="px-4 py-1.5 text-sm font-medium rounded-md bg-white text-gray-900 shadow-sm transition">Active</button>
+                        <button class="px-4 py-1.5 text-sm font-medium rounded-md text-gray-500 hover:text-gray-900 transition">History</button>
+                    </div>
+                </div>
+
+                <div id="orders-container" class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    </div>
+            </div>
+
+        </div>
+    </main>
+
+    <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 h-16 flex justify-around items-center z-40 pb-safe">
+        <a href="#" class="flex flex-col items-center text-gray-400 hover:text-blue-600 text-xs gap-1">
+            <i class="fa-solid fa-chart-pie text-lg"></i>
+            <span>Home</span>
+        </a>
+        <a href="#" class="flex flex-col items-center text-blue-600 text-xs gap-1">
+            <i class="fa-solid fa-list-check text-lg"></i>
+            <span>Orders</span>
+        </a>
+        <div class="w-12"></div> <a href="#" class="flex flex-col items-center text-gray-400 hover:text-blue-600 text-xs gap-1">
+            <i class="fa-solid fa-message text-lg"></i>
+            <span>Inbox</span>
+        </a>
+        <a href="#" class="flex flex-col items-center text-gray-400 hover:text-blue-600 text-xs gap-1">
+            <i class="fa-solid fa-user text-lg"></i>
+            <span>Profile</span>
+        </a>
+        
+        <button class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 hover:-translate-y-1 transition">
+            <i class="fa-solid fa-plus text-xl"></i>
+        </button>
+    </nav>
+
+    <div id="order-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="closeModal()"></div>
+        
+        <div class="absolute inset-y-0 right-0 w-full max-w-2xl bg-white shadow-2xl flex flex-col transform transition-transform duration-300 translate-x-full" id="modal-panel">
+            
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900" id="modal-title">Order #1024</h3>
+                    <p class="text-xs text-gray-500" id="modal-id">ID: 8a7s9d8f7</p>
+                </div>
+                <button onclick="closeModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 text-gray-600 transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="flex border-b border-gray-200 px-6 space-x-6 text-sm font-medium overflow-x-auto no-scrollbar">
+                <button onclick="switchTab('overview')" class="tab-btn active py-3 border-b-2 border-blue-600 text-blue-600" data-tab="overview">Overview</button>
+                <button onclick="switchTab('communication')" class="tab-btn py-3 border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="communication">Communication</button>
+                <button onclick="switchTab('files')" class="tab-btn py-3 border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="files">Files & Deliverables</button>
+                <button onclick="switchTab('financials')" class="tab-btn py-3 border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="financials">Financials</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6 bg-white">
+                
+                <div id="tab-overview" class="tab-content active space-y-6">
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <h4 class="text-xs font-bold text-gray-500 uppercase mb-4">Project Progress</h4>
+                        <div class="flex items-center justify-between relative px-2">
+                            <div class="absolute top-1/2 left-0 w-full h-0.5 bg-gray-200 -z-10 transform -translate-y-1/2"></div>
+                            
+                            <div class="flex flex-col items-center bg-white p-1">
+                                <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-md ring-4 ring-blue-50">1</div>
+                                <span class="text-[10px] font-bold mt-1 text-blue-700">Scope</span>
+                            </div>
+                            <div class="flex flex-col items-center bg-white p-1">
+                                <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-md">2</div>
+                                <span class="text-[10px] font-bold mt-1 text-blue-700">Draft</span>
+                            </div>
+                            <div class="flex flex-col items-center bg-white p-1">
+                                <div class="w-8 h-8 rounded-full bg-yellow-500 text-white flex items-center justify-center text-xs font-bold shadow-md animate-pulse">3</div>
+                                <span class="text-[10px] font-bold mt-1 text-gray-900">Review</span>
+                            </div>
+                            <div class="flex flex-col items-center bg-white p-1">
+                                <div class="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-xs font-bold">4</div>
+                                <span class="text-[10px] font-medium mt-1 text-gray-400">Final</span>
+                            </div>
+                        </div>
+                        <p class="text-center text-xs text-gray-500 mt-4">Currently in: <strong class="text-gray-800">Review Stage</strong> (Est. Completion: 2 Days)</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-900 mb-1">Description</h4>
+                            <p class="text-sm text-gray-600 leading-relaxed" id="modal-desc">
+                                Loading description...
+                            </p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-blue-50 p-3 rounded-lg">
+                                <p class="text-xs text-blue-600 uppercase font-bold">Total Edit Requests</p>
+                                <p class="text-xl font-bold text-gray-900" id="modal-edits">3</p>
+                            </div>
+                            <div class="bg-purple-50 p-3 rounded-lg">
+                                <p class="text-xs text-purple-600 uppercase font-bold">Assigned Agent</p>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <div class="w-6 h-6 rounded-full bg-purple-200 text-purple-700 flex items-center justify-center text-xs font-bold">JD</div>
+                                    <p class="text-sm font-bold text-gray-900" id="modal-agent">ID: #9921</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-communication" class="tab-content h-[400px] flex flex-col">
+                    <div class="flex-1 overflow-y-auto space-y-3 p-2 border border-gray-100 rounded-lg bg-gray-50" id="chat-container">
+                        </div>
+                    <div class="mt-3 flex gap-2">
+                        <input type="text" placeholder="Type a message to your researcher..." class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                        <button class="bg-blue-600 text-white px-4 rounded-lg text-sm hover:bg-blue-700"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                </div>
+
+                <div id="tab-files" class="tab-content space-y-4">
+                    <h4 class="text-sm font-bold text-gray-900">Supabase Storage</h4>
+                    <div class="space-y-2" id="files-list">
+                        </div>
+                </div>
+
+                <div id="tab-financials" class="tab-content space-y-4">
+                    <div class="flex justify-between items-end bg-green-50 p-4 rounded-xl border border-green-100">
+                        <div>
+                            <p class="text-xs font-bold text-green-700 uppercase">Total Paid Amount</p>
+                            <h2 class="text-3xl font-bold text-gray-900" id="modal-total">$1,250.00</h2>
+                        </div>
+                        <span class="bg-green-200 text-green-800 text-xs px-2 py-1 rounded font-bold">PAID IN FULL</span>
+                    </div>
+
+                    <h4 class="text-sm font-bold text-gray-900 mt-6">Transaction History</h4>
+                    <div class="overflow-x-auto border rounded-lg border-gray-200">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-200">
+                                <tr>
+                                    <th class="px-4 py-3">Date</th>
+                                    <th class="px-4 py-3">Tx ID</th>
+                                    <th class="px-4 py-3">Description</th>
+                                    <th class="px-4 py-3 text-right">Amount</th>
+                                    <th class="px-4 py-3 text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="payment-table-body">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
+                <button onclick="closeModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100">Close</button>
+                <button class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm">Request Update</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- MOCK DATA ---
+        const orders = [
+            {
+                id: "ORD-2023-001",
+                title: "Molecular Analysis of Polymer Chains",
+                description: "Deep dive research into the stability of bio-polymers under high heat conditions. Requires statistical analysis of recent lab data.",
+                timestamp: "Oct 24, 2023",
+                status: "Open",
+                stage: 3, // 1=Scope, 2=Draft, 3=Review, 4=Final
+                agentId: "AGT-882",
+                totalAmount: "$850.00",
+                editRequests: 2,
+                chats: [
+                    { sender: "agent", text: "Hello Dr. Doe, I have started the initial literature review.", time: "10:00 AM" },
+                    { sender: "client", text: "Great, please focus on data from 2020 onwards.", time: "10:15 AM" },
+                    { sender: "agent", text: "Understood. I've found 3 key papers fitting that criteria.", time: "2:00 PM" }
+                ],
+                files: [
+                    { name: "preliminary_data.csv", size: "2.4 MB", type: "csv" },
+                    { name: "literature_review_v1.pdf", size: "4.1 MB", type: "pdf" }
+                ],
+                payments: [
+                    { date: "Oct 24", id: "TX-991", desc: "Initial Deposit", amount: "$425.00", status: "Success" },
+                    { date: "Oct 26", id: "TX-998", desc: "Milestone 1 Release", amount: "$425.00", status: "Success" }
+                ]
+            },
+            {
+                id: "ORD-2023-005",
+                title: "AI Ethics in Healthcare Survey",
+                description: "Qualitative survey analysis regarding patient trust in AI-driven diagnostic tools.",
+                timestamp: "Nov 02, 2023",
+                status: "Closed",
+                stage: 4,
+                agentId: "AGT-104",
+                totalAmount: "$1,200.00",
+                editRequests: 0,
+                chats: [
+                    { sender: "agent", text: "Final manuscript delivered via Supabase.", time: "Yesterday" }
+                ],
+                files: [
+                    { name: "Final_Manuscript.docx", size: "12 KB", type: "doc" },
+                    { name: "Invoice_#005.pdf", size: "150 KB", type: "pdf" }
+                ],
+                payments: [
+                    { date: "Nov 02", id: "TX-102", desc: "Full Payment", amount: "$1,200.00", status: "Success" },
+                    { date: "Nov 05", id: "TX-105", desc: "Extra Formatting", amount: "$50.00", status: "Success" }
+                ]
+            }
+        ];
+
+        // --- RENDER FUNCTIONS ---
+
+        function renderOrders() {
+            const container = document.getElementById('orders-container');
+            container.innerHTML = orders.map(order => {
+                // Determine Status Color
+                const statusClass = order.status === 'Open' 
+                    ? 'bg-blue-100 text-blue-700' 
+                    : 'bg-green-100 text-green-700';
+
+                // Determine Stage Bar Width
+                const progressWidth = (order.stage / 4) * 100;
+
+                return `
+                <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition cursor-pointer group" onclick="openModal('${order.id}')">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <span class="text-xs font-mono text-gray-400">#${order.id}</span>
+                            <h3 class="font-bold text-gray-900 text-lg group-hover:text-blue-600 transition-colors">${order.title}</h3>
+                        </div>
+                        <span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusClass}">${order.status}</span>
+                    </div>
+                    
+                    <p class="text-sm text-gray-500 line-clamp-2 mb-4">${order.description}</p>
+                    
+                    <div class="mb-4">
+                        <div class="flex justify-between text-xs text-gray-500 mb-1">
+                            <span>Progress (Stage ${order.stage}/4)</span>
+                            <span>${Math.round(progressWidth)}%</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                            <div class="bg-blue-600 h-1.5 rounded-full" style="width: ${progressWidth}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+                        <div class="flex items-center gap-3">
+                            <div class="text-xs">
+                                <p class="text-gray-400">Agent</p>
+                                <p class="font-medium text-gray-800">${order.agentId}</p>
+                            </div>
+                            <div class="h-6 w-px bg-gray-200"></div>
+                            <div class="text-xs">
+                                <p class="text-gray-400">Total</p>
+                                <p class="font-bold text-gray-900">${order.totalAmount}</p>
+                            </div>
+                        </div>
+                        <button class="text-blue-600 text-sm font-medium flex items-center gap-1 hover:underline">
+                            Details <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // --- MODAL LOGIC ---
+
+        function openModal(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+
+            // Populate Basic Info
+            document.getElementById('modal-title').innerText = order.title;
+            document.getElementById('modal-id').innerText = `Order ID: ${order.id} • ${order.timestamp}`;
+            document.getElementById('modal-desc').innerText = order.description;
+            document.getElementById('modal-edits').innerText = order.editRequests;
+            document.getElementById('modal-agent').innerText = order.agentId;
+            document.getElementById('modal-total').innerText = order.totalAmount;
+
+            // Populate Chats
+            const chatContainer = document.getElementById('chat-container');
+            chatContainer.innerHTML = order.chats.map(chat => `
+                <div class="flex flex-col ${chat.sender === 'client' ? 'items-end' : 'items-start'}">
+                    <div class="chat-bubble ${chat.sender === 'client' ? 'chat-client' : 'chat-agent'}">
+                        ${chat.text}
+                    </div>
+                    <span class="text-[10px] text-gray-400 mt-1 mx-1">${chat.time}</span>
+                </div>
+            `).join('');
+
+            // Populate Files
+            const filesContainer = document.getElementById('files-list');
+            filesContainer.innerHTML = order.files.map(file => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg hover:border-blue-300 transition group">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded bg-white border border-gray-200 flex items-center justify-center text-red-500">
+                            <i class="fa-solid fa-file-${file.type === 'pdf' ? 'pdf' : 'lines'} text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">${file.name}</p>
+                            <p class="text-xs text-gray-500">${file.size} • Hosted on Supabase</p>
+                        </div>
+                    </div>
+                    <button class="text-gray-400 hover:text-blue-600 p-2"><i class="fa-solid fa-download"></i></button>
+                </div>
+            `).join('');
+
+            // Populate Payments
+            const payBody = document.getElementById('payment-table-body');
+            payBody.innerHTML = order.payments.map(pay => `
+                <tr class="bg-white border-b hover:bg-gray-50">
+                    <td class="px-4 py-3 font-mono text-gray-500">${pay.date}</td>
+                    <td class="px-4 py-3 font-mono text-xs text-gray-500">${pay.id}</td>
+                    <td class="px-4 py-3 font-medium text-gray-900">${pay.desc}</td>
+                    <td class="px-4 py-3 text-right font-bold text-gray-900">${pay.amount}</td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded">${pay.status}</span>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Show Modal
+            const modal = document.getElementById('order-modal');
+            const panel = document.getElementById('modal-panel');
+            modal.classList.remove('hidden');
+            
+            setTimeout(() => {
+                panel.classList.remove('translate-x-full');
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('order-modal');
+            const panel = document.getElementById('modal-panel');
+            
+            panel.classList.add('translate-x-full');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        // --- TAB LOGIC ---
+        function switchTab(tabName) {
+            // Update Buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if(btn.dataset.tab === tabName) {
+                    btn.classList.add('border-blue-600', 'text-blue-600');
+                    btn.classList.remove('border-transparent', 'text-gray-500');
+                } else {
+                    btn.classList.remove('border-blue-600', 'text-blue-600');
+                    btn.classList.add('border-transparent', 'text-gray-500');
+                }
+            });
+
+            // Update Content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderOrders();
+        });
+
+    </script>
+</body>
+</html>
